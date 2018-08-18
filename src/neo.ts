@@ -7,7 +7,7 @@ interface Options {
   loggerOptions?: LoggerOptions,
 }
 
-class Neo extends EventEmitter {
+export class Neo extends EventEmitter {
   private options: Options
   private logger: Logger
 
@@ -27,5 +27,3 @@ class Neo extends EventEmitter {
     this.logger.debug('constructor completes.')
   }
 }
-
-export default Neo
