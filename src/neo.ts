@@ -1,7 +1,5 @@
 import { EventEmitter } from 'events'
 import Logger from 'node-log-it'
-// import { version } from '../package.json'
-const version = '1.2.3'
 
 class Neo extends EventEmitter {
   private logger: any
@@ -10,14 +8,6 @@ class Neo extends EventEmitter {
     super()
 
     this.logger = new Logger('Neo')
-  }
-
-  static get VERSION(): string {
-    return version
-  }
-
-  get VERSION(): string {
-    return version
   }
 
   getLoggerName(): string {
