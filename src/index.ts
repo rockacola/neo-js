@@ -1,8 +1,13 @@
 import { EventEmitter } from 'events'
+import Logger from './common/logger'
 
 class Neo extends EventEmitter {
+  private logger: any
+
   constructor(options = {}) {
-    super();
+    super()
+
+    this.logger = new Logger('Neo')
   }
 
   static get VERSION(): string {
@@ -11,6 +16,10 @@ class Neo extends EventEmitter {
 
   get VERSION(): string {
     return '0.10.1'
+  }
+
+  getLoggerName(): string {
+    return this.logger.getName()
   }
 }
 
