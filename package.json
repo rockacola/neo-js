@@ -2,7 +2,7 @@
   "name": "neo-js",
   "version": "0.10.0",
   "description": "A package for running a node on the neo blockchain.",
-  "main": "dist/index.js",
+  "main": "dist/index",
   "types": "dist/index.d.ts",
   "scripts": {
     "webpack": "webpack",
@@ -33,11 +33,7 @@
     "webpack-cli": "^3.1.0"
   },
   "dependencies": {
-    "@types/lodash": "^4.14.116",
-    "@types/loglevel": "^1.5.3",
     "events": "^3.0.0",
-    "lodash": "^4.17.10",
-    "loglevel": "^1.6.1",
-    "moment": "^2.22.2"
+    "node-log-it": "^1.1.0"
   }
 }

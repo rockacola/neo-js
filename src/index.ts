@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events'
-import Logger from './common/logger'
+import Logger from 'node-log-it'
 
 class Neo extends EventEmitter {
   private logger: any
