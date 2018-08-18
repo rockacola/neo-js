@@ -2,8 +2,8 @@
   "name": "neo-js",
   "version": "0.10.0",
   "description": "A package for running a node on the neo blockchain.",
-  "main": "dist/index",
-  "types": "dist/index.d.ts",
+  "main": "dist/neo",
+  "types": "dist/neo",
   "scripts": {
     "webpack": "webpack",
     "mocha": "mocha",

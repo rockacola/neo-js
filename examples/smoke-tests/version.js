@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const Neo = require('../../dist/index.js').default
+const Neo = require('../../dist/neo').default
 
 // -- Implementation
 

@@ -2,9 +2,9 @@ const path = require('path')
 
 module.exports = {
   mode: 'production',
-  entry: './src/index.ts',
+  entry: './src/neo.ts',
   output: {
-    filename: 'index.js',
+    filename: 'neo.js',
     path: path.resolve(__dirname, 'dist'),
     libraryTarget: 'umd',
   },

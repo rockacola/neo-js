@@ -1,6 +1,6 @@
 'use strict'
 var expect = require('chai').expect
-var Neo = require('../dist/index.js').default
+var Neo = require('../dist/neo').default
 
 describe('static version test', () => {
   it('should return 0.10.0', () => {

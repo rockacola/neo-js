@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events'
 import Logger from 'node-log-it'
-import { version } from '../package.json'
+// import { version } from '../package.json'
+const version = '1.2.3'
 
 class Neo extends EventEmitter {
   private logger: any
