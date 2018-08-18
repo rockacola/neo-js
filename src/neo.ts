@@ -9,10 +9,6 @@ class Neo extends EventEmitter {
 
     this.logger = new Logger('Neo')
   }
-
-  getLoggerName(): string {
-    return this.logger.getName()
-  }
 }
 
 export default Neo
