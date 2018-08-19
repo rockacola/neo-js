@@ -7,7 +7,8 @@ interface Options {
   loggerOptions?: LoggerOptions,
 }
 
-const DEFAULT_OPTIONS = {
+const MODULE_NAME = 'Node'
+const DEFAULT_OPTIONS: Options = {
   loggerOptions: {},
 }
 
@@ -22,7 +23,7 @@ export class Node extends EventEmitter {
     this.options = merge({}, DEFAULT_OPTIONS, options)
 
     // Bootstrapping
-    this.logger = new Logger('Node', this.options.loggerOptions)
+    this.logger = new Logger(MODULE_NAME, this.options.loggerOptions)
 
     this.logger.debug('constructor completes.')
   }

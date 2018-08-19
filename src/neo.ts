@@ -7,7 +7,8 @@ interface Options {
   loggerOptions?: LoggerOptions,
 }
 
-const DEFAULT_OPTIONS = {
+const MODULE_NAME = 'Neo'
+const DEFAULT_OPTIONS: Options = {
   network: 'testnet',
   loggerOptions: {},
 }
@@ -23,7 +24,7 @@ export class Neo extends EventEmitter {
     this.options = merge({}, DEFAULT_OPTIONS, options)
 
     // Bootstrapping
-    this.logger = new Logger('Neo', this.options.loggerOptions)
+    this.logger = new Logger(MODULE_NAME, this.options.loggerOptions)
 
     this.logger.debug('constructor completes.')
   }
