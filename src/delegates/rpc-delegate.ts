@@ -8,4 +8,14 @@ export class RpcDelegate {
     const q = new rpc.Query({ method: 'getblock', params: [height, verboseKey], id: DEFAULT_ID})
     return q.execute(url)
   }
+
+  static getBlockCount(url: string): Promise<object> {
+    const q = new rpc.Query({ method: 'getblockcount', params: [], id: DEFAULT_ID })
+    return q.execute(url)
+  }
+
+  static getVersion(url: string): Promise<object> {
+    const q = new rpc.Query({ method: 'getversion', params: [], id: DEFAULT_ID })
+    return q.execute(url)
+  }
 }
