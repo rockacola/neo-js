@@ -1,10 +1,15 @@
 import { EventEmitter } from 'events'
 import { Logger, LoggerOptions } from 'node-log-it'
-import { assign } from 'lodash'
+import { merge } from 'lodash'
 
 interface Options {
   network?: string,
   loggerOptions?: LoggerOptions,
+}
+
+const DEFAULT_OPTIONS = {
+  network: 'testnet',
+  loggerOptions: {},
 }
 
 export class Neo extends EventEmitter {
@@ -15,11 +20,7 @@ export class Neo extends EventEmitter {
     super()
 
     // Associate optional properties
-    this.options = {
-      network: 'testnet',
-      loggerOptions: {},
-    }
-    assign(this.options, options)
+    this.options = merge({}, DEFAULT_OPTIONS, options)
 
     // Bootstrapping
     this.logger = new Logger('Neo', this.options.loggerOptions)
