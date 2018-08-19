@@ -33,6 +33,7 @@
     "webpack-cli": "^3.1.0"
   },
   "dependencies": {
+    "@cityofzion/neon-js": "^3.10.0",
     "events": "^3.0.0",
     "lodash": "^4.17.10",
     "node-log-it": "^2.0.0"
