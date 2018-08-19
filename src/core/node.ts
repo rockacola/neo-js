@@ -1,7 +1,7 @@
 import { EventEmitter } from "events"
 import { Logger, LoggerOptions } from 'node-log-it'
 import { merge } from 'lodash'
-import { RpcDelegate } from './delegates/rpc-delegate'
+import { RpcDelegate } from '../delegates/rpc-delegate'
 
 interface Options {
   loggerOptions?: LoggerOptions,
