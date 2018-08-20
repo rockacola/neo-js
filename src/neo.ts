@@ -1,23 +1,31 @@
 import { EventEmitter } from 'events'
 import { Logger, LoggerOptions } from 'node-log-it'
 import { merge } from 'lodash'
-
-interface Options {
-  network?: string,
-  loggerOptions?: LoggerOptions,
-}
+import { Mesh, MeshOptions } from './core/mesh'
+import { Node } from './core/node'
+import { EndpointValidator } from './validators/endpoint-validator'
+import profiles from './common/profiles'
+import C from './common/constants'
 
 const MODULE_NAME = 'Neo'
-const DEFAULT_OPTIONS: Options = {
-  network: 'testnet',
+const DEFAULT_OPTIONS: NeoOptions = {
+  network: C.network.testnet,
   loggerOptions: {},
 }
 
-export class Neo extends EventEmitter {
-  private options: Options
-  private logger: Logger
+export interface NeoOptions {
+  network?: string,
+  endpoints?: object[],
+  meshOptions?: MeshOptions,
+  loggerOptions?: LoggerOptions,
+}
 
-  constructor(options = {}) {
+export class Neo extends EventEmitter {
+  private options: NeoOptions
+  private logger: Logger
+  private mesh: Mesh
+
+  constructor(options: NeoOptions = {}) {
     super()
 
     // Associate optional properties
@@ -25,7 +33,37 @@ export class Neo extends EventEmitter {
 
     // Bootstrapping
     this.logger = new Logger(MODULE_NAME, this.options.loggerOptions)
+    this.mesh = this.getMesh()
 
     this.logger.debug('constructor completes.')
+  }
+
+  private getMesh() {
+    const nodes = this.getNodes()
+    return new Mesh(nodes, this.options.meshOptions)
+  }
+
+  private getNodes(): Node[] {
+    // Fetch endpoints
+    let endpoints: object[] = []
+    if (this.options.endpoints) {
+      EndpointValidator.validateArray(this.options.endpoints)
+      endpoints = this.options.endpoints
+    } else if (this.options.network === C.network.testnet) {
+      endpoints = profiles.rpc.testnet
+    } else if (this.options.network === C.network.mainnet) {
+      endpoints = profiles.rpc.mainnet
+    } else {
+      throw new Error('Invalid network or provided endpoints.')
+    }
+
+    // Instantiate nodes
+    let nodes: Node[] = []
+    endpoints.forEach((item) => {
+      const node = new Node((<any> item).endpoint)
+      nodes.push(node)
+    })
+
+    return nodes
   }
 }
