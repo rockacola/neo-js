@@ -33,14 +33,17 @@ export class Node extends EventEmitter {
   }
 
   getBlock(height: number, isVerbose: boolean = true): Promise<object> {
+    this.logger.debug('getBlock triggered.')
     return RpcDelegate.getBlock(this.endpoint, height, isVerbose)
   }
 
   getBlockCount(): Promise<object> {
+    this.logger.debug('getBlockCount triggered.')
     return RpcDelegate.getBlockCount(this.endpoint)
   }
 
   getVersion(): Promise<object> {
+    this.logger.debug('getVersion triggered.')
     return RpcDelegate.getVersion(this.endpoint)
   }
 }

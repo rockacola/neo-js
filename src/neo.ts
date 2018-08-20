@@ -23,7 +23,7 @@ export interface NeoOptions {
 export class Neo extends EventEmitter {
   private options: NeoOptions
   private logger: Logger
-  private mesh: Mesh
+  public mesh: Mesh
 
   constructor(options: NeoOptions = {}) {
     super()
@@ -39,11 +39,13 @@ export class Neo extends EventEmitter {
   }
 
   private getMesh() {
+    this.logger.debug('getMesh triggered.')
     const nodes = this.getNodes()
     return new Mesh(nodes, this.options.meshOptions)
   }
 
   private getNodes(): Node[] {
+    this.logger.debug('getNodes triggered.')
     // Fetch endpoints
     let endpoints: object[] = []
     if (this.options.endpoints) {

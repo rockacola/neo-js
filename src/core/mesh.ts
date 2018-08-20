@@ -14,7 +14,7 @@ export interface MeshOptions {
 }
 
 export class Mesh extends EventEmitter {
-  private nodes: Node[]
+  public nodes: Node[]
   private options: MeshOptions
   private logger: Logger
 

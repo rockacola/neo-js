@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import { LoggerOptions } from 'node-log-it';
-import { MeshOptions } from './core/mesh';
+import { Mesh, MeshOptions } from './core/mesh';
 export interface NeoOptions {
     network?: string;
     endpoints?: object[];
@@ -10,7 +10,7 @@ export interface NeoOptions {
 export declare class Neo extends EventEmitter {
     private options;
     private logger;
-    private mesh;
+    mesh: Mesh;
     constructor(options?: NeoOptions);
     private getMesh;
     private getNodes;

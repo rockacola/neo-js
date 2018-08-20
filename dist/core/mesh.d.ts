@@ -5,7 +5,7 @@ export interface MeshOptions {
     loggerOptions?: LoggerOptions;
 }
 export declare class Mesh extends EventEmitter {
-    private nodes;
+    nodes: Node[];
     private options;
     private logger;
     constructor(nodes: Node[], options?: MeshOptions);
