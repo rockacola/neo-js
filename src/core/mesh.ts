@@ -2,7 +2,6 @@ import { EventEmitter } from "events"
 import { Logger, LoggerOptions } from 'node-log-it'
 import { merge } from 'lodash'
 import { Node } from "./node"
-import { RpcDelegate } from '../delegates/rpc-delegate'
 
 const MODULE_NAME = 'Mesh'
 const DEFAULT_OPTIONS: MeshOptions = {

@@ -1,9 +1,10 @@
 import { EventEmitter } from "events"
 import { Logger, LoggerOptions } from 'node-log-it'
 import { merge } from 'lodash'
-import { RpcDelegate } from '../delegates/rpc-delegate'
+import { RpcDelegate } from "../delegates/rpc-delegate"
 
 const MODULE_NAME = 'Node'
+const DEFAULT_ID = 0
 const DEFAULT_OPTIONS: NodeOptions = {
   loggerOptions: {},
 }
@@ -34,16 +35,30 @@ export class Node extends EventEmitter {
 
   getBlock(height: number, isVerbose: boolean = true): Promise<object> {
     this.logger.debug('getBlock triggered.')
-    return RpcDelegate.getBlock(this.endpoint, height, isVerbose)
+    const verboseKey: number = isVerbose ? 1 : 0
+    return this.query('getblock', [height, verboseKey])
   }
 
   getBlockCount(): Promise<object> {
     this.logger.debug('getBlockCount triggered.')
-    return RpcDelegate.getBlockCount(this.endpoint)
+    return this.query('getblockcount')
   }
 
   getVersion(): Promise<object> {
     this.logger.debug('getVersion triggered.')
-    return RpcDelegate.getVersion(this.endpoint)
+    return this.query('getversion')
+  }
+
+  private query(method: string, params: any[] = [], id: number = DEFAULT_ID): Promise<object> {
+    this.logger.debug('query triggered. method:', method)
+    return new Promise((resolve, reject) => {
+      RpcDelegate.query(this.endpoint, method, params, id)
+        .then((res) => {
+          return resolve(res)
+        })
+        .catch((err) => {
+          return reject(err)
+        })
+    })
   }
 }
