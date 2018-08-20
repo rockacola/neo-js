@@ -2,7 +2,7 @@ import { EventEmitter } from 'events'
 import { Logger, LoggerOptions } from 'node-log-it'
 import { merge } from 'lodash'
 import { Mesh, MeshOptions } from './core/mesh'
-import { Node } from './core/node'
+import { Node, NodeOptions } from './core/node'
 import { EndpointValidator } from './validators/endpoint-validator'
 import profiles from './common/profiles'
 import C from './common/constants'
@@ -16,6 +16,7 @@ const DEFAULT_OPTIONS: NeoOptions = {
 export interface NeoOptions {
   network?: string,
   endpoints?: object[],
+  nodeOptions?: NodeOptions,
   meshOptions?: MeshOptions,
   loggerOptions?: LoggerOptions,
 }
@@ -62,7 +63,7 @@ export class Neo extends EventEmitter {
     // Instantiate nodes
     let nodes: Node[] = []
     endpoints.forEach((item) => {
-      const node = new Node((<any> item).endpoint)
+      const node = new Node((<any> item).endpoint, this.options.nodeOptions)
       nodes.push(node)
     })
 
