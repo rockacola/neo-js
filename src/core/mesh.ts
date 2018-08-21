@@ -22,7 +22,7 @@ export interface MeshOptions {
 
 export class Mesh extends EventEmitter {
   public nodes: Node[] // Ensure there's at least 1 item in the array
-  private isReady = false
+  private _isReady = false
   private benchmarkIntervalId?: NodeJS.Timer
   private options: MeshOptions
   private logger: Logger
@@ -46,6 +46,10 @@ export class Mesh extends EventEmitter {
     }
   
     this.logger.debug('constructor completes.')
+  }
+
+  isReady(): boolean {
+    return this._isReady
   }
 
   startBenchmark() {
@@ -86,8 +90,8 @@ export class Mesh extends EventEmitter {
     this.logger.debug('checkMeshReady triggered.')
     const activeNodes = this.listActiveNodes()
     if (!this.options.minActiveNodesRequired || activeNodes.length >= this.options.minActiveNodesRequired) {
-      if (!this.isReady) { // First signal that mesh is considered as 'ready' state
-        this.isReady = true
+      if (!this._isReady) { // First signal that mesh is considered as 'ready' state
+        this._isReady = true
         this.emit('ready')
         this.logger.debug('mesh is considered to be now ready.')
       }
