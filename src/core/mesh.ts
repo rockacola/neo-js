@@ -49,17 +49,16 @@ export class Mesh extends EventEmitter {
   getRandomNode(activeOnly = true): Node | undefined {
     this.logger.debug('getRandomNode triggered.')
 
-    if (!activeOnly) { // Pick any from all nodes
-      const randomIndex = chance.natural({ min: 0, max: this.nodes.length-1 })
-      return this.nodes[randomIndex]
-    }
-
-    const activeNodes = filter(this.nodes, { isActive: true })
-    if (activeNodes.length === 0) {
+    const nodePool = activeOnly ? this.listActiveNodes() : this.nodes
+    if (nodePool.length === 0) {
       return undefined
     }
 
-    const randomIndex = chance.natural({ min: 0, max: activeNodes.length-1 })
-    return this.nodes[randomIndex]
+    const randomIndex = chance.natural({ min: 0, max: nodePool.length-1 })
+    return nodePool[randomIndex]
+  }
+
+  private listActiveNodes(): Node[] {
+    return filter(this.nodes, { isActive: true })
   }
 }
