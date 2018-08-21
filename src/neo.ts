@@ -3,6 +3,7 @@ import { Logger, LoggerOptions } from 'node-log-it'
 import { merge } from 'lodash'
 import { Mesh, MeshOptions } from './core/mesh'
 import { Node, NodeOptions } from './core/node'
+import { Api, ApiOptions } from './core/api'
 import { EndpointValidator } from './validators/endpoint-validator'
 import profiles from './common/profiles'
 import C from './common/constants'
@@ -18,6 +19,7 @@ export interface NeoOptions {
   endpoints?: object[],
   nodeOptions?: NodeOptions,
   meshOptions?: MeshOptions,
+  apiOptions?: ApiOptions,
   loggerOptions?: LoggerOptions,
 }
 
@@ -25,6 +27,7 @@ export class Neo extends EventEmitter {
   private options: NeoOptions
   private logger: Logger
   public mesh: Mesh
+  public api: Api
 
   constructor(options: NeoOptions = {}) {
     super()
@@ -35,6 +38,7 @@ export class Neo extends EventEmitter {
     // Bootstrapping
     this.logger = new Logger(MODULE_NAME, this.options.loggerOptions)
     this.mesh = this.getMesh()
+    this.api = this.getApi()
 
     this.logger.debug('constructor completes.')
   }
@@ -51,6 +55,11 @@ export class Neo extends EventEmitter {
     this.logger.debug('getMesh triggered.')
     const nodes = this.getNodes()
     return new Mesh(nodes, this.options.meshOptions)
+  }
+
+  private getApi() {
+    this.logger.debug('getApi triggered.')
+    return new Api(this.options.apiOptions)
   }
 
   private getNodes(): Node[] {
