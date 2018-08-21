@@ -2,6 +2,7 @@ import { EventEmitter } from "events"
 import { Logger, LoggerOptions } from 'node-log-it'
 import { merge } from 'lodash'
 import { RpcDelegate } from "../delegates/rpc-delegate"
+import C from '../common/constants'
 
 const MODULE_NAME = 'Node'
 const DEFAULT_ID = 0
@@ -80,17 +81,17 @@ export class Node extends EventEmitter {
   getBlock(height: number, isVerbose: boolean = true): Promise<object> {
     this.logger.debug('getBlock triggered.')
     const verboseKey: number = isVerbose ? 1 : 0
-    return this.query('getblock', [height, verboseKey])
+    return this.query(C.rpc.getblock, [height, verboseKey])
   }
 
   getBlockCount(): Promise<object> {
     this.logger.debug('getBlockCount triggered.')
-    return this.query('getblockcount')
+    return this.query(C.rpc.getblockcount)
   }
 
   getVersion(): Promise<object> {
     this.logger.debug('getVersion triggered.')
-    return this.query('getversion')
+    return this.query(C.rpc.getversion)
   }
 
   private query(method: string, params: any[] = [], id: number = DEFAULT_ID): Promise<object> {
@@ -101,7 +102,7 @@ export class Node extends EventEmitter {
       RpcDelegate.query(this.endpoint, method, params, id)
         .then((res) => {
           const latency = Date.now() - t0
-          const blockHeight = (method === 'getblockcount') ? (<any> res).result : undefined
+          const blockHeight = (method === C.rpc.getblockcount) ? (<any> res).result : undefined
           this.emit('query:success', { method, latency, blockHeight })
           return resolve(res)
         })
