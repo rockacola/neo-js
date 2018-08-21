@@ -89,6 +89,7 @@ export class Mesh extends EventEmitter {
       if (!this.isReady) { // First signal that mesh is considered as 'ready' state
         this.isReady = true
         this.emit('ready')
+        this.logger.debug('mesh is considered to be now ready.')
       }
     }
   }

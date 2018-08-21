@@ -11,14 +11,13 @@ const Neo = require('../../dist/neo').Neo
     meshOptions: {
       loggerOptions: { level: 'debug' },
     },
+    apiOptions: {
+      loggerOptions: { level: 'debug' },
+    },
     loggerOptions: { level: 'debug' },
   })
 
-  neo.mesh.nodes[0].getVersion()
-    .then((res) => {
-      console.log('res:', res)
-    })
-    .catch((err) => {
-      console.log('err:', err)
-    })
+  const endpoint = neo.mesh.nodes[0].endpoint
+  const blockCount = await neo.mesh.nodes[0].getBlockCount()
+  console.log('endpoint:', endpoint, 'blockCount:', blockCount)
 })()
