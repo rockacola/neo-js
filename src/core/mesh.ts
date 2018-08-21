@@ -1,6 +1,6 @@
 import { EventEmitter } from "events"
 import { Logger, LoggerOptions } from 'node-log-it'
-import { merge, filter } from 'lodash'
+import { merge, filter, minBy, maxBy } from 'lodash'
 import { Chance } from 'chance'
 import { Node } from "./node"
 
@@ -37,11 +37,37 @@ export class Mesh extends EventEmitter {
     this.logger.debug('constructor completes.')
   }
 
-  // getFastestNode(): Node {
-  // }
+  getFastestNode(activeOnly = true): Node | undefined {
+    this.logger.debug('getFastestNode triggered.')
 
-  // getHighestNode(): Node {
-  // }
+    let nodePool = activeOnly ? this.listActiveNodes() : this.nodes
+    if (nodePool.length === 0) {
+      return undefined
+    }
+
+    nodePool = filter(nodePool, (node: Node) => (node.latency !== undefined))
+    if (nodePool.length === 0) {
+      return undefined
+    }
+
+    return minBy(nodePool, 'latency')
+  }
+
+  getHighestNode(activeOnly = true): Node | undefined {
+    this.logger.debug('getHighestNode triggered.')
+
+    let nodePool = activeOnly ? this.listActiveNodes() : this.nodes
+    if (nodePool.length === 0) {
+      return undefined
+    }
+
+    nodePool = filter(nodePool, (node: Node) => (node.blockHeight !== undefined))
+    if (nodePool.length === 0) {
+      return undefined
+    }
+
+    return maxBy(nodePool, 'blockHeight')
+  }
 
   /**
    * @param activeOnly Toggle to only pick node that is determined to be active.
