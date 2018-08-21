@@ -7,15 +7,20 @@ import { Node } from "./node"
 const chance = new Chance()
 const MODULE_NAME = 'Mesh'
 const DEFAULT_OPTIONS: MeshOptions = {
+  startBenchmarkOnInit: true,
+  benchmarkIntervalMs: 2000,
   loggerOptions: {},
 }
 
 export interface MeshOptions {
+  startBenchmarkOnInit?: boolean,
+  benchmarkIntervalMs?: number,
   loggerOptions?: LoggerOptions,
 }
 
 export class Mesh extends EventEmitter {
   public nodes: Node[] // Ensure there's at least 1 item in the array
+  private benchmarkIntervalId?: NodeJS.Timer
   private options: MeshOptions
   private logger: Logger
 
@@ -33,8 +38,43 @@ export class Mesh extends EventEmitter {
 
     // Bootstrapping
     this.logger = new Logger(MODULE_NAME, this.options.loggerOptions)
-
+    if (this.options.startBenchmarkOnInit) {
+      this.startBenchmark()
+    }
+  
     this.logger.debug('constructor completes.')
+  }
+
+  startBenchmark() {
+    this.logger.debug('startBenchmark triggered.')
+
+    // Go through and ping all unknown nodes
+    const unknownNodes = filter(this.nodes, (n: Node) => (n.isActive === undefined))
+    this.logger.debug('unknownNodes.length:', unknownNodes.length)
+    unknownNodes.forEach((n) => {
+      this.logger.debug('oink')
+      return n.getBlockCount()
+    })
+
+    // Start timer
+    this.benchmarkIntervalId = setInterval(() => this.performBenchmark(), <number> this.options.benchmarkIntervalMs)
+  }
+
+  stopBenchmark() {
+    this.logger.debug('stopBenchmark triggered.')
+    if (this.benchmarkIntervalId) {
+      clearInterval(this.benchmarkIntervalId)
+    }
+  }
+
+  private performBenchmark() {
+    this.logger.debug('performBenchmark triggered.')
+
+    // pick and ping a random node
+    const node = this.getRandomNode()
+    if (node) {
+      node.getBlockCount()
+    }
   }
 
   getFastestNode(activeOnly = true): Node | undefined {
@@ -45,7 +85,7 @@ export class Mesh extends EventEmitter {
       return undefined
     }
 
-    nodePool = filter(nodePool, (node: Node) => (node.latency !== undefined))
+    nodePool = filter(nodePool, (n: Node) => (n.latency !== undefined))
     if (nodePool.length === 0) {
       return undefined
     }
@@ -61,7 +101,7 @@ export class Mesh extends EventEmitter {
       return undefined
     }
 
-    nodePool = filter(nodePool, (node: Node) => (node.blockHeight !== undefined))
+    nodePool = filter(nodePool, (n: Node) => (n.blockHeight !== undefined))
     if (nodePool.length === 0) {
       return undefined
     }
