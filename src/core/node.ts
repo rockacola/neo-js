@@ -17,7 +17,7 @@ export interface NodeOptions {
 }
 
 export class Node extends EventEmitter {
-  public isAvailable: boolean | undefined
+  public isActive: boolean | undefined
   public pendingRequests: number | undefined
   public latency: number | undefined // In milliseconds
   public blockHeight: number | undefined
@@ -59,7 +59,7 @@ export class Node extends EventEmitter {
     if (this.options.toBenchmark) {
       this.decreasePendingRequest()
       this.lastSeenTimestamp = Date.now()
-      this.isAvailable = true
+      this.isActive = true
       if ((<any> payload).latency) {
         this.latency = (<any> payload).latency
       }
@@ -74,7 +74,7 @@ export class Node extends EventEmitter {
     if (this.options.toBenchmark) {
       this.decreasePendingRequest()
       this.lastSeenTimestamp = Date.now()
-      this.isAvailable = false
+      this.isActive = false
     }
   }
 
