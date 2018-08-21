@@ -52,7 +52,6 @@ export class Mesh extends EventEmitter {
     const unknownNodes = filter(this.nodes, (n: Node) => (n.isActive === undefined))
     this.logger.debug('unknownNodes.length:', unknownNodes.length)
     unknownNodes.forEach((n) => {
-      this.logger.debug('oink')
       return n.getBlockCount()
     })
 
