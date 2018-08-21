@@ -39,6 +39,14 @@ export class Neo extends EventEmitter {
     this.logger.debug('constructor completes.')
   }
 
+  static get VERSION(): string {
+    return profiles.version
+  }
+
+  get VERSION(): string {
+    return profiles.version
+  }
+
   private getMesh() {
     this.logger.debug('getMesh triggered.')
     const nodes = this.getNodes()
