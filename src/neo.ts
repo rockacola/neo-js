@@ -24,10 +24,11 @@ export interface NeoOptions {
 }
 
 export class Neo extends EventEmitter {
-  private options: NeoOptions
-  private logger: Logger
   public mesh: Mesh
   public api: Api
+
+  private options: NeoOptions
+  private logger: Logger
 
   constructor(options: NeoOptions = {}) {
     super()
@@ -59,7 +60,7 @@ export class Neo extends EventEmitter {
 
   private getApi() {
     this.logger.debug('getApi triggered.')
-    return new Api(this.options.apiOptions)
+    return new Api(this.mesh, this.options.apiOptions)
   }
 
   private getNodes(): Node[] {
