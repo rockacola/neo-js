@@ -24,6 +24,10 @@ const benchmarkDurationMs = 30 * 1000
     loggerOptions: { level: 'info' },
   })
 
+  neo.mesh.on('ready', () => {
+    logger.info('neo.mesh indicates that it is now in ready state!')
+  })
+
   const reportIntervalId = setInterval(() => {
     const fastestNode = neo.mesh.getFastestNode()
     if (fastestNode) {

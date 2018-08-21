@@ -9,17 +9,20 @@ const MODULE_NAME = 'Mesh'
 const DEFAULT_OPTIONS: MeshOptions = {
   startBenchmarkOnInit: true,
   benchmarkIntervalMs: 2000,
+  minActiveNodesRequired: 2,
   loggerOptions: {},
 }
 
 export interface MeshOptions {
   startBenchmarkOnInit?: boolean,
   benchmarkIntervalMs?: number,
+  minActiveNodesRequired?: number,
   loggerOptions?: LoggerOptions,
 }
 
 export class Mesh extends EventEmitter {
   public nodes: Node[] // Ensure there's at least 1 item in the array
+  private isReady = false
   private benchmarkIntervalId?: NodeJS.Timer
   private options: MeshOptions
   private logger: Logger
@@ -52,7 +55,10 @@ export class Mesh extends EventEmitter {
     const unknownNodes = filter(this.nodes, (n: Node) => (n.isActive === undefined))
     this.logger.debug('unknownNodes.length:', unknownNodes.length)
     unknownNodes.forEach((n) => {
-      return n.getBlockCount()
+      n.getBlockCount()
+        .then(() => {
+          this.checkMeshReady()
+        })
     })
 
     // Start timer
@@ -73,6 +79,17 @@ export class Mesh extends EventEmitter {
     const node = this.getRandomNode()
     if (node) {
       node.getBlockCount()
+    }
+  }
+
+  private checkMeshReady() {
+    this.logger.debug('checkMeshReady triggered.')
+    const activeNodes = this.listActiveNodes()
+    if (!this.options.minActiveNodesRequired || activeNodes.length >= this.options.minActiveNodesRequired) {
+      if (!this.isReady) { // First signal that mesh is considered as 'ready' state
+        this.isReady = true
+        this.emit('ready')
+      }
     }
   }
 
