@@ -3,6 +3,10 @@ const C = {
     testnet: 'testnet',
     mainnet: 'mainnet',
   },
+  storage: {
+    memory: 'memory',
+    mongodb: 'mongodb',
+  },
   rpc: {
     getblock: 'getblock',
     getblockcount: 'getblockcount',

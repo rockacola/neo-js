@@ -4,6 +4,8 @@ import { merge } from 'lodash'
 import { Mesh, MeshOptions } from './core/mesh'
 import { Node, NodeOptions } from './core/node'
 import { Api, ApiOptions } from './core/api'
+import { MemoryStorage, MemoryStorageOptions } from './storages/memory-storage'
+import { MongodbStorage, MongodbStorageOptions } from './storages/mongodb-storage'
 import { EndpointValidator } from './validators/endpoint-validator'
 import profiles from './common/profiles'
 import C from './common/constants'
@@ -11,20 +13,24 @@ import C from './common/constants'
 const MODULE_NAME = 'Neo'
 const DEFAULT_OPTIONS: NeoOptions = {
   network: C.network.testnet,
+  storageType: C.storage.memory,
   loggerOptions: {},
 }
 
 export interface NeoOptions {
   network?: string,
+  storageType?: string,
   endpoints?: object[],
   nodeOptions?: NodeOptions,
   meshOptions?: MeshOptions,
+  storageOptions?: MemoryStorageOptions | MongodbStorageOptions,
   apiOptions?: ApiOptions,
   loggerOptions?: LoggerOptions,
 }
 
 export class Neo extends EventEmitter {
   public mesh: Mesh
+  public storage: MemoryStorage | MongodbStorage
   public api: Api
 
   private options: NeoOptions
@@ -39,6 +45,7 @@ export class Neo extends EventEmitter {
     // Bootstrapping
     this.logger = new Logger(MODULE_NAME, this.options.loggerOptions)
     this.mesh = this.getMesh()
+    this.storage = this.getStorage()
     this.api = this.getApi()
 
     this.logger.debug('constructor completes.')
@@ -52,15 +59,26 @@ export class Neo extends EventEmitter {
     return profiles.version
   }
 
-  private getMesh() {
+  private getMesh(): Mesh {
     this.logger.debug('getMesh triggered.')
     const nodes = this.getNodes()
     return new Mesh(nodes, this.options.meshOptions)
   }
 
-  private getApi() {
+  private getStorage(): MemoryStorage | MongodbStorage {
+    this.logger.debug('getStorage triggered.')
+    if (this.options.storageType === C.storage.memory) {
+      return new MemoryStorage(this.options.storageOptions)
+    } else if (this.options.storageType === C.storage.mongodb) {
+      return new MongodbStorage(this.options.storageOptions)
+    } else {
+      throw new Error(`Unknown storageType [${this.options.storageType}]`)
+    }
+  }
+
+  private getApi(): Api {
     this.logger.debug('getApi triggered.')
-    return new Api(this.mesh, this.options.apiOptions)
+    return new Api(this.mesh, this.storage, this.options.apiOptions)
   }
 
   private getNodes(): Node[] {
