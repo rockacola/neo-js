@@ -2,6 +2,10 @@
 
 const Neo = require('../../dist/neo').Neo
 
+process.on('unhandledRejection', (reason, p) => {
+  console.warn('Unhandled Rejection at: Promise', p, 'reason:', reason)
+})
+
 // -- Implementation
 
 ;(async () => {

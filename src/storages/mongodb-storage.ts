@@ -24,11 +24,20 @@ export class MongodbStorage extends EventEmitter {
 
     // Bootstrapping
     this.logger = new Logger(MODULE_NAME, this.options.loggerOptions)
-  
+    this._isReady = true
+
     this.logger.debug('constructor completes.')
   }
 
   isReady(): boolean {
     return this._isReady
+  }
+
+  getBlockCount(): Promise<number> {
+    throw new Error('Not implemented.')
+  }
+
+  setBlockCount(blockHeight: number) {
+    throw new Error('Not implemented.')
   }
 }

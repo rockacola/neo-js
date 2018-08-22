@@ -37,11 +37,17 @@ export class Api extends EventEmitter {
   }
 
   getBlockCount(): Promise<number> {
-    const highestNode = this.mesh.getHighestNode()
-    if (highestNode) {
-      return Promise.resolve(<number> highestNode.blockHeight)
-    } else {
-      throw new Error('Edge case not implemented.')
-    }
+    return new Promise((resolve, reject) => {
+      this.storage.getBlockCount()
+        .then((blockHeight) => resolve(blockHeight))
+        .catch((err) => { // Failed to fetch from storage, try mesh instead
+          const highestNode = this.mesh.getHighestNode()
+          if (highestNode && highestNode.blockHeight) {
+            return resolve(highestNode.blockHeight)
+          } else {
+            return reject(new Error('Edge case not implemented.'))
+          }
+        })
+    })
   }
 }
