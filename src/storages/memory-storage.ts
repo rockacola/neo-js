@@ -43,6 +43,7 @@ export class MemoryStorage extends EventEmitter {
   }
 
   setBlockCount(blockHeight: number) {
+    // TODO: change this to return promise instead
     this._blockHeight = blockHeight
   }
 }

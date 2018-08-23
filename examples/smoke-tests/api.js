@@ -6,12 +6,17 @@ process.on('unhandledRejection', (reason, p) => {
   console.warn('Unhandled Rejection at: Promise', p, 'reason:', reason)
 })
 
+// -- Parameters
+
+const network = 'mainnet'
+
 // -- Implementation
 
 ;(async () => {
   console.log('== API Example ==')
   const neo = new Neo({
-    network: 'testnet',
+    network: network,
+    storageType: 'memory',
     meshOptions: {
       loggerOptions: { level: 'debug' },
     },

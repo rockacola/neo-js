@@ -13,7 +13,6 @@ import C from './common/constants'
 const MODULE_NAME = 'Neo'
 const DEFAULT_OPTIONS: NeoOptions = {
   network: C.network.testnet,
-  storageType: C.storage.memory,
   loggerOptions: {},
 }
 
@@ -30,7 +29,7 @@ export interface NeoOptions {
 
 export class Neo extends EventEmitter {
   public mesh: Mesh
-  public storage: MemoryStorage | MongodbStorage
+  public storage?: MemoryStorage | MongodbStorage
   public api: Api
 
   private options: NeoOptions
@@ -65,9 +64,11 @@ export class Neo extends EventEmitter {
     return new Mesh(nodes, this.options.meshOptions)
   }
 
-  private getStorage(): MemoryStorage | MongodbStorage {
+  private getStorage(): MemoryStorage | MongodbStorage | undefined {
     this.logger.debug('getStorage triggered.')
-    if (this.options.storageType === C.storage.memory) {
+    if (!this.options.storageType) { // No storage
+      return undefined
+    } else if (this.options.storageType === C.storage.memory) {
       return new MemoryStorage(this.options.storageOptions)
     } else if (this.options.storageType === C.storage.mongodb) {
       return new MongodbStorage(this.options.storageOptions)
