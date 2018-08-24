@@ -20,4 +20,5 @@ const Neo = require('../../dist/neo').Neo
   const endpoint = neo.mesh.nodes[0].endpoint
   const blockCount = await neo.mesh.nodes[0].getBlockCount()
   console.log('endpoint:', endpoint, 'blockCount:', blockCount)
+  neo.mesh.stopBenchmark()
 })()
