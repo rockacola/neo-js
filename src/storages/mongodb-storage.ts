@@ -1,7 +1,7 @@
 import { EventEmitter } from "events"
 import { Logger, LoggerOptions } from 'node-log-it'
-import { merge, toInteger } from 'lodash'
-import { Mongoose, Document, Model, Schema } from "mongoose"
+import { merge } from 'lodash'
+import { Mongoose, Schema } from "mongoose"
 const mongoose = new Mongoose()
 mongoose.Promise = global.Promise // Explicitly supply promise library (http://mongoosejs.com/docs/promises.html)
 
@@ -55,8 +55,6 @@ export class MongodbStorage extends EventEmitter {
   private getBlockModel() {
     const schema = new Schema({
       height: Number,
-      created_at: Number,
-      modified_at: Number,
       source: {
         endpoint: String,
       },
@@ -78,7 +76,7 @@ export class MongodbStorage extends EventEmitter {
         confirmations: Number,
         nextblockhash: String
       },
-    })
+    }, { timestamps: true })
 
     return mongoose.models[this.options.collectionNames!.blocks!] || mongoose.model(this.options.collectionNames!.blocks!, schema)
   }
@@ -136,8 +134,6 @@ export class MongodbStorage extends EventEmitter {
 
     const data = {
       height,
-      created_at: toInteger(Date.now()),
-      modified_at: toInteger(Date.now()),
       source,
       payload: block,
     }
