@@ -66,4 +66,9 @@ export class MemoryStorage extends EventEmitter {
     this.blockCollection.push({ height, block })
     return Promise.resolve()
   }
+
+  disconnect(): Promise<void> {
+    this.logger.debug('disconnect triggered.')
+    return Promise.resolve()
+  }
 }

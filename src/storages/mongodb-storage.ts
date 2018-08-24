@@ -147,4 +147,9 @@ export class MongodbStorage extends EventEmitter {
       })
     })
   }
+
+  disconnect(): Promise<void> {
+    this.logger.debug('disconnect triggered.')
+    return mongoose.disconnect()
+  }
 }

@@ -35,7 +35,7 @@ const network = 'mainnet'
     console.log('=> block #6:', await neo.api.getBlock(height))
     console.log('=> block #6 (again):', await neo.api.getBlock(height))
 
-    neo.mesh.stopBenchmark()
+    neo.close()
     console.log('=== THE END ===')
   })
 })()

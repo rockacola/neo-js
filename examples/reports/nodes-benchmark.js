@@ -45,7 +45,7 @@ const benchmarkDurationMs = 30 * 1000
   }, 5000)
 
   setTimeout(() => {
-    neo.mesh.stopBenchmark()
+    neo.close()
     clearInterval(reportIntervalId)
     logger.info('=== THE END ===')
   }, benchmarkDurationMs)

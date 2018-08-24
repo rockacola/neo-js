@@ -9,5 +9,5 @@ const Neo = require('../../dist/neo').Neo
   console.log('Neo class Version:', Neo.VERSION)
   const neo = new Neo()
   console.log('Neo instance Version:', neo.VERSION)
-  neo.mesh.stopBenchmark()
+  neo.close()
 })()

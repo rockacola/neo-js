@@ -40,9 +40,9 @@ const blockCollectionName = 'blocks'
   // Wait for mesh to be ready before start testing
   neo.mesh.on('ready', async () => {
     // console.log('=> blockCount:', await neo.api.getBlockCount())
-    console.log('=> block #6:', await neo.api.getBlock(6))
+    console.log('=> block #12:', await neo.api.getBlock(12))
 
-    neo.mesh.stopBenchmark()
+    neo.close()
     console.log('=== THE END ===')
   })
 })()

@@ -106,4 +106,14 @@ export class Neo extends EventEmitter {
 
     return nodes
   }
+
+  close() {
+    this.logger.debug('close triggered.')
+    if (this.mesh) {
+      this.mesh.stopBenchmark()
+    }
+    if (this.storage) {
+      this.storage.disconnect()
+    }
+  }
 }
