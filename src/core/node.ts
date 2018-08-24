@@ -102,9 +102,10 @@ export class Node extends EventEmitter {
       RpcDelegate.query(this.endpoint, method, params, id)
         .then((res) => {
           const latency = Date.now() - t0
-          const blockHeight = (method === C.rpc.getblockcount) ? (<any> res).result : undefined
+          const result = (<any> res).result
+          const blockHeight = (method === C.rpc.getblockcount) ? result : undefined
           this.emit('query:success', { method, latency, blockHeight })
-          return resolve(res)
+          return resolve(result)
         })
         .catch((err) => {
           this.emit('query:failed', { method, error: err })
