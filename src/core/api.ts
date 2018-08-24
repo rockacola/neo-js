@@ -1,10 +1,11 @@
-import { EventEmitter } from "events"
+import { EventEmitter } from 'events'
 import { Logger, LoggerOptions } from 'node-log-it'
 import { merge } from 'lodash'
 import { Mesh } from './mesh'
-import { MemoryStorage } from "../storages/memory-storage"
-import { MongodbStorage } from "../storages/mongodb-storage"
+import { MemoryStorage } from '../storages/memory-storage'
+import { MongodbStorage } from '../storages/mongodb-storage'
 import C from '../common/constants'
+import { NeoValidator } from '../validators/neo-validator'
 
 const MODULE_NAME = 'Api'
 const DEFAULT_OPTIONS: ApiOptions = {
@@ -26,7 +27,7 @@ export class Api extends EventEmitter {
   private options: ApiOptions
   private logger: Logger
 
-  constructor(mesh: Mesh, storage: any, options: ApiOptions = {}) {
+  constructor(mesh: Mesh, storage?: MemoryStorage | MongodbStorage, options: ApiOptions = {}) {
     super()
 
     // Associate required properties
@@ -106,8 +107,10 @@ export class Api extends EventEmitter {
   }
 
   getBlock(height: number): Promise<object> {
-    // throw new Error('Not implemented.')
     this.logger.debug('getBlock triggered. height:', height)
+
+    NeoValidator.validateHeight(height)
+
     if(!this.storage) {
       this.logger.debug('No storage delegate detected.')
       return this.getBlockFromMesh(height)

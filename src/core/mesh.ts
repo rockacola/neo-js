@@ -1,8 +1,8 @@
-import { EventEmitter } from "events"
+import { EventEmitter } from 'events'
 import { Logger, LoggerOptions } from 'node-log-it'
 import { merge, filter, minBy, maxBy } from 'lodash'
 import { Chance } from 'chance'
-import { Node } from "./node"
+import { Node } from './node'
 
 const chance = new Chance()
 const MODULE_NAME = 'Mesh'

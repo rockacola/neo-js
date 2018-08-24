@@ -1,4 +1,4 @@
-import { EventEmitter } from "events"
+import { EventEmitter } from 'events'
 import { Logger, LoggerOptions } from 'node-log-it'
 import { merge, find } from 'lodash'
 

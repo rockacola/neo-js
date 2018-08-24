@@ -1,8 +1,9 @@
-import { EventEmitter } from "events"
+import { EventEmitter } from 'events'
 import { Logger, LoggerOptions } from 'node-log-it'
 import { merge } from 'lodash'
-import { RpcDelegate } from "../delegates/rpc-delegate"
+import { RpcDelegate } from '../delegates/rpc-delegate'
 import C from '../common/constants'
+import { NeoValidator } from '../validators/neo-validator'
 
 const MODULE_NAME = 'Node'
 const DEFAULT_ID = 0
@@ -80,6 +81,9 @@ export class Node extends EventEmitter {
 
   getBlock(height: number, isVerbose: boolean = true): Promise<object> {
     this.logger.debug('getBlock triggered.')
+
+    NeoValidator.validateHeight(height)
+
     const verboseKey: number = isVerbose ? 1 : 0
     return this.query(C.rpc.getblock, [height, verboseKey])
   }
