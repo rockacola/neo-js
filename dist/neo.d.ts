@@ -18,7 +18,7 @@ export interface NeoOptions {
 }
 export declare class Neo extends EventEmitter {
     mesh: Mesh;
-    storage: MemoryStorage | MongodbStorage;
+    storage?: MemoryStorage | MongodbStorage;
     api: Api;
     private options;
     private logger;
@@ -29,4 +29,5 @@ export declare class Neo extends EventEmitter {
     private getStorage;
     private getApi;
     private getNodes;
+    close(): void;
 }

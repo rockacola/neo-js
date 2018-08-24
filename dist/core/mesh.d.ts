@@ -1,7 +1,7 @@
 /// <reference types="node" />
-import { EventEmitter } from "events";
+import { EventEmitter } from 'events';
 import { LoggerOptions } from 'node-log-it';
-import { Node } from "./node";
+import { Node } from './node';
 export interface MeshOptions {
     startBenchmarkOnInit?: boolean;
     benchmarkIntervalMs?: number;
@@ -20,6 +20,7 @@ export declare class Mesh extends EventEmitter {
     stopBenchmark(): void;
     private performBenchmark;
     private checkMeshReady;
+    private setReady;
     getFastestNode(activeOnly?: boolean): Node | undefined;
     getHighestNode(activeOnly?: boolean): Node | undefined;
     /**

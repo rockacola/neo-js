@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { EventEmitter } from "events";
+import { EventEmitter } from 'events';
 import { LoggerOptions } from 'node-log-it';
 export interface NodeOptions {
     toBenchmark?: boolean;
