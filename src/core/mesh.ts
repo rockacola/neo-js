@@ -91,11 +91,15 @@ export class Mesh extends EventEmitter {
     const activeNodes = this.listActiveNodes()
     if (!this.options.minActiveNodesRequired || activeNodes.length >= this.options.minActiveNodesRequired) {
       if (!this._isReady) { // First signal that mesh is considered as 'ready' state
-        this._isReady = true
-        this.emit('ready')
+        this.setReady()
         this.logger.debug('mesh is considered to be now ready.')
       }
     }
+  }
+
+  private setReady() {
+    this._isReady = true
+    this.emit('ready')
   }
 
   getFastestNode(activeOnly = true): Node | undefined {
