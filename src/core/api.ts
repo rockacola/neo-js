@@ -47,13 +47,27 @@ export class Api extends EventEmitter {
   
   private storageInsertHandler(payload: StorageInsertPayload) {
     this.logger.debug('storageInsertHandler triggered.')
+    if (payload.method === C.rpc.getblockcount) {
+      this.storeBlockCount(payload)
+    } else if (payload.method === C.rpc.getblock) {
+      this.storeBlock(payload)
+    } else {
+      throw new Error('Not implemented.')
+    }
+  }
+
+  private storeBlockCount(payload: StorageInsertPayload) {
     if (this.storage) {
-      if (payload.method === C.rpc.getblockcount) {
-        const blockHeight = <number> payload.result
-        this.storage.setBlockCount(blockHeight)
-      } else {
-        throw new Error('Not implemented.')
-      }
+      const blockHeight = <number> payload.result
+      this.storage.setBlockCount(blockHeight)
+    }
+  }
+
+  private storeBlock(payload: StorageInsertPayload) {
+    if (this.storage) {
+      const height = <number> payload.result.height
+      const block = <object> payload.result.block
+      this.storage.setBlock(height, block)
     }
   }
 
@@ -82,11 +96,46 @@ export class Api extends EventEmitter {
 
   private getBlockCountFromMesh(): Promise<number> {
     this.logger.debug('getBlockCountFromMesh triggered.')
-    // TODO: check if mesh is ready
     const highestNode = this.mesh.getHighestNode()
     if (highestNode && highestNode.blockHeight) {
       return Promise.resolve(highestNode.blockHeight)
     } else {
+      // TODO
+      return Promise.reject(new Error('Edge case not implemented.'))
+    }
+  }
+
+  getBlock(height: number): Promise<object> {
+    // throw new Error('Not implemented.')
+    this.logger.debug('getBlock triggered. height:', height)
+    if(!this.storage) {
+      this.logger.debug('No storage delegate detected.')
+      return this.getBlockFromMesh(height)
+    }
+
+    return new Promise((resolve, reject) => {
+      this.storage!.getBlock(height)
+        .then((block) => resolve(block))
+        .catch((err) => { // Failed to fetch from storage, try mesh instead
+          this.logger.debug('Cannot find result from storage delegate, attempt to fetch from mesh instead...')
+          this.getBlockFromMesh(height)
+            .then((block) => {
+              this.logger.debug('Successfully fetch result from mesh.')
+              this.emit('storage:insert', { method: C.rpc.getblock, result: { height, block, }})
+              resolve(block)
+            })
+            .catch((err2) => reject(err2))
+        })
+    })
+  }
+
+  private getBlockFromMesh(height: number): Promise<object> {
+    this.logger.debug('getBlockFromMesh triggered.')
+    const highestNode = this.mesh.getHighestNode()
+    if (highestNode && highestNode.blockHeight) {
+      return highestNode.getBlock(height)
+    } else {
+      // TODO
       return Promise.reject(new Error('Edge case not implemented.'))
     }
   }

@@ -40,4 +40,12 @@ export class MongodbStorage extends EventEmitter {
   setBlockCount(blockHeight: number) {
     throw new Error('Not implemented.')
   }
+
+  getBlock(blockHeight: number): Promise<object> {
+    throw new Error('Not implemented.')
+  }
+
+  setBlock(height: number, block: object): Promise<void> {
+    throw new Error('Not implemented.')
+  }
 }

@@ -1,6 +1,6 @@
 import { EventEmitter } from "events"
 import { Logger, LoggerOptions } from 'node-log-it'
-import { merge } from 'lodash'
+import { merge, find } from 'lodash'
 
 const MODULE_NAME = 'MemoryStorage'
 const DEFAULT_OPTIONS: MemoryStorageOptions = {
@@ -11,9 +11,15 @@ export interface MemoryStorageOptions {
   loggerOptions?: LoggerOptions,
 }
 
+interface BlockItem {
+  height: number,
+  block: object,
+}
+
 export class MemoryStorage extends EventEmitter {
   private _isReady = false
   private _blockHeight?: number
+  private blockCollection: BlockItem[] = []
   private options: MemoryStorageOptions
   private logger: Logger
 
@@ -45,5 +51,19 @@ export class MemoryStorage extends EventEmitter {
   setBlockCount(blockHeight: number) {
     // TODO: change this to return promise instead
     this._blockHeight = blockHeight
+  }
+
+  getBlock(height: number): Promise<object> {
+    const blockItem = find(this.blockCollection, { height })
+    if (blockItem) {
+      return Promise.resolve(blockItem.block)
+    } else {
+      return Promise.reject(new Error('Block not found.'))
+    }
+  }
+
+  setBlock(height: number, block: object): Promise<void> {
+    this.blockCollection.push({ height, block })
+    return Promise.resolve()
   }
 }

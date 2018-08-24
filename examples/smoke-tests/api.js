@@ -31,6 +31,10 @@ const network = 'mainnet'
     const blockCount = await neo.api.getBlockCount()
     console.log('=> blockCount:', blockCount)
 
+    const height = 6
+    console.log('=> block #6:', await neo.api.getBlock(height))
+    console.log('=> block #6 (again):', await neo.api.getBlock(height))
+
     neo.mesh.stopBenchmark()
     console.log('=== THE END ===')
   })
