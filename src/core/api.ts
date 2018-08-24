@@ -67,7 +67,7 @@ export class Api extends EventEmitter {
     if (this.storage) {
       const height = <number> payload.result.height
       const block = <object> payload.result.block
-      this.storage.setBlock(height, block)
+      this.storage.setBlock(height, block, {})
     }
   }
 
@@ -117,7 +117,8 @@ export class Api extends EventEmitter {
       this.storage!.getBlock(height)
         .then((block) => resolve(block))
         .catch((err) => { // Failed to fetch from storage, try mesh instead
-          this.logger.debug('Cannot find result from storage delegate, attempt to fetch from mesh instead...')
+          this.logger.debug('Cannot find result from storage delegate. Error:', err.message)
+          this.logger.debug('Attempt to fetch from mesh instead...')
           this.getBlockFromMesh(height)
             .then((block) => {
               this.logger.debug('Successfully fetch result from mesh.')

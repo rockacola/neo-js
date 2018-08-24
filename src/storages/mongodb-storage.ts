@@ -1,6 +1,6 @@
 import { EventEmitter } from "events"
 import { Logger, LoggerOptions } from 'node-log-it'
-import { merge } from 'lodash'
+import { merge, toInteger } from 'lodash'
 import { Mongoose, Document, Model, Schema } from "mongoose"
 const mongoose = new Mongoose()
 mongoose.Promise = global.Promise // Explicitly supply promise library (http://mongoosejs.com/docs/promises.html)
@@ -54,22 +54,30 @@ export class MongodbStorage extends EventEmitter {
 
   private getBlockModel() {
     const schema = new Schema({
-      hash: String,
-      size: Number,
-      version: Number,
-      previousblockhash: String,
-      merkleroot: String,
-      time: Number,
-      index: {type: 'Number', unique: true, required: true, dropDups: true},
-      nonce: String,
-      nextconsensus: String,
-      script: {
-        invocation: String,
-        verification: String
+      height: Number,
+      created_at: Number,
+      modified_at: Number,
+      source: {
+        endpoint: String,
       },
-      tx: [],
-      confirmations: Number,
-      nextblockhash: String
+      payload: {
+        hash: String,
+        size: Number,
+        version: Number,
+        previousblockhash: String,
+        merkleroot: String,
+        time: Number,
+        index: { type: 'Number', required: true },
+        nonce: String,
+        nextconsensus: String,
+        script: {
+          invocation: String,
+          verification: String
+        },
+        tx: [],
+        confirmations: Number,
+        nextblockhash: String
+      },
     })
 
     return mongoose.models[this.options.collectionNames!.blocks!] || mongoose.model(this.options.collectionNames!.blocks!, schema)
@@ -105,30 +113,36 @@ export class MongodbStorage extends EventEmitter {
     throw new Error('Not implemented.')
   }
 
-  getBlock(blockHeight: number): Promise<object> {
-    this.logger.debug('getBlock triggered. blockHeight:', blockHeight)
+  getBlock(height: number): Promise<object> {
+    this.logger.debug('getBlock triggered. height:', height)
 
     return new Promise((resolve, reject) => {
-      this.blockModel.findOne({ index: blockHeight })
+      this.blockModel.findOne({ height })
         .exec((err: any, res: any) => {
           if (err) {
             this.logger.warn('blockModel.findOne() execution failed. error:', err.message)
             return reject(err)
           }
-          if (!res) {
+          if (!res || !res.payload) {
             return reject(new Error('No result found.'))
           }
-          return resolve(res)
+          return resolve(res.payload)
         })
     })
   }
 
-  setBlock(height: number, block: object): Promise<void> {
+  setBlock(height: number, block: object, source: object): Promise<void> {
     this.logger.debug('setBlock triggered.')
 
+    const data = {
+      height,
+      created_at: toInteger(Date.now()),
+      modified_at: toInteger(Date.now()),
+      source,
+      payload: block,
+    }
     return new Promise((resolve, reject) => {
-      // block = this.delintBlock(block)
-      this.blockModel(block).save((err: any) => {
+      this.blockModel(data).save((err: any) => {
         if (err) {
           this.logger.warn('blockModel().save() execution failed.')
           reject(err)
