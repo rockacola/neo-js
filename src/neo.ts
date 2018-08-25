@@ -4,11 +4,13 @@ import { merge } from 'lodash'
 import { Mesh, MeshOptions } from './core/mesh'
 import { Node, NodeOptions } from './core/node'
 import { Api, ApiOptions } from './core/api'
+import { Syncer, SyncerOptions } from './core/syncer'
 import { MemoryStorage, MemoryStorageOptions } from './storages/memory-storage'
 import { MongodbStorage, MongodbStorageOptions } from './storages/mongodb-storage'
 import { EndpointValidator } from './validators/endpoint-validator'
 import profiles from './common/profiles'
 import C from './common/constants'
+
 
 const MODULE_NAME = 'Neo'
 const DEFAULT_OPTIONS: NeoOptions = {
@@ -24,6 +26,7 @@ export interface NeoOptions {
   meshOptions?: MeshOptions,
   storageOptions?: MemoryStorageOptions | MongodbStorageOptions,
   apiOptions?: ApiOptions,
+  syncerOptions?: SyncerOptions,
   loggerOptions?: LoggerOptions,
 }
 
@@ -31,6 +34,7 @@ export class Neo extends EventEmitter {
   public mesh: Mesh
   public storage?: MemoryStorage | MongodbStorage
   public api: Api
+  public syncer: Syncer
 
   private options: NeoOptions
   private logger: Logger
@@ -46,6 +50,7 @@ export class Neo extends EventEmitter {
     this.mesh = this.getMesh()
     this.storage = this.getStorage()
     this.api = this.getApi()
+    this.syncer = this.getSyncer()
 
     this.logger.debug('constructor completes.')
   }
@@ -80,6 +85,11 @@ export class Neo extends EventEmitter {
   private getApi(): Api {
     this.logger.debug('getApi triggered.')
     return new Api(this.mesh, this.storage, this.options.apiOptions)
+  }
+
+  private getSyncer(): Syncer {
+    this.logger.debug('getSyncer triggered.')
+    return new Syncer(this.mesh, this.storage, this.options.syncerOptions)
   }
 
   private getNodes(): Node[] {
