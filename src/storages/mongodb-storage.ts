@@ -104,7 +104,22 @@ export class MongodbStorage extends EventEmitter {
   }
 
   getBlockCount(): Promise<number> {
-    throw new Error('Not implemented.')
+    this.logger.debug('getBlockCount triggered.')
+    return new Promise((resolve, reject) => {
+      this.blockModel.findOne({}, 'height')
+        .sort({ height: -1 })
+        .exec((err: any, res: any) => {
+          if (err) {
+            this.logger.warn('blockModel.findOne() execution failed.')
+            reject(err)
+          }
+          if (!res) {
+            this.logger.warn('blockModel.findOne() executed by without response data.')
+            reject(new Error('Unable to find response data.'))
+          }
+          resolve(res.height)
+        })
+    })
   }
 
   setBlockCount(blockHeight: number) {
