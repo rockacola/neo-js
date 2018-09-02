@@ -13,6 +13,7 @@ const DEFAULT_OPTIONS: SyncerOptions = {
   workerCount: 30,
   doEnqueueBlockIntervalMs: 2000,
   maxQueueLength: 10000,
+  reQueueDelayMs: 2000,
   loggerOptions: {},
 }
 
@@ -21,6 +22,7 @@ export interface SyncerOptions {
   workerCount?: number,
   doEnqueueBlockIntervalMs?: number,
   maxQueueLength?: number,
+  reQueueDelayMs?: number,
   loggerOptions?: LoggerOptions,
 }
 
@@ -51,7 +53,7 @@ export class Syncer extends EventEmitter {
     }
 
     // Event handlers
-    // TODO
+    this.on('storeBlock:complete', this.storeBlockCompleteHandler.bind(this))
 
     this.logger.debug('constructor completes.')
   }
@@ -89,6 +91,15 @@ export class Syncer extends EventEmitter {
     // TODO
   }
 
+  private storeBlockCompleteHandler(payload: any) {
+    if (payload.isSuccess === false) {
+      this.logger.debug('storeBlockCompleteHandler !isSuccess triggered.')
+      setTimeout(() => { // Re-queue the method when failed after an injected delay
+        this.enqueueBlock(payload.height)
+      }, this.options.reQueueDelayMs!)
+    }
+  }
+
   private getPriorityQueue(): any {
     /**
      * @param {object} task
@@ -99,7 +110,7 @@ export class Syncer extends EventEmitter {
     return priorityQueue((task: object, callback: Function) => {
       const method: Function = (<any> task).method
       const attrs: Object = (<any> task).attrs
-      this.logger.info('new worker for queue. method.name:', method.name, 'attrs:', attrs)
+      this.logger.debug('new worker for queue.')
 
       method(attrs)
         .then(() => {
@@ -111,7 +122,7 @@ export class Syncer extends EventEmitter {
           this.logger.warn(`Task execution error. Method: [${method}]. Continue...`)
           this.logger.info('Error:', err)
           callback()
-          this.emit('async:run:complete', { isSuccess: false, task })
+          this.emit('syncer:run:complete', { isSuccess: false, task })
         })
     }, this.options.workerCount!)
   }
@@ -180,7 +191,7 @@ export class Syncer extends EventEmitter {
     return new Promise((resolve, reject) => {
       const node = this.mesh.getFastestNode() // TODO: need to pick a node with least pending requests
       if (!node) {
-        this.emit('storeBlock:complete', { isSuccess: false })
+        this.emit('storeBlock:complete', { isSuccess: false, height })
         return reject(new Error('No valid node found.'))
       }
 
@@ -189,18 +200,18 @@ export class Syncer extends EventEmitter {
           this.storage!.setBlock(height, block, {})
             .then((res) => {
               this.logger.debug('setBlock succeeded. For height:', height)
-              this.emit('storeBlock:complete', { isSuccess: true })
+              this.emit('storeBlock:complete', { isSuccess: true, height })
               return resolve()
             })
             .catch((err) => {
               this.logger.debug('setBlock failed. For height:', height)
-              this.emit('storeBlock:complete', { isSuccess: false })
+              this.emit('storeBlock:complete', { isSuccess: false, height })
               return reject(err)
             })
         })
         .catch((err) => {
           this.logger.debug('getBlock failed. For height:', height)
-          this.emit('storeBlock:complete', { isSuccess: false })
+          this.emit('storeBlock:complete', { isSuccess: false, height })
           return reject(err)
         })
     })
