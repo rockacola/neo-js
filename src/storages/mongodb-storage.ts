@@ -111,13 +111,13 @@ export class MongodbStorage extends EventEmitter {
         .exec((err: any, res: any) => {
           if (err) {
             this.logger.warn('blockModel.findOne() execution failed.')
-            reject(err)
+            return reject(err)
           }
           if (!res) {
-            this.logger.warn('blockModel.findOne() executed by without response data.')
-            reject(new Error('Unable to find response data.'))
+            this.logger.info('blockModel.findOne() executed by without response data, hence no blocks available.')
+            return resolve(0)
           }
-          resolve(res.height)
+          return resolve(res.height)
         })
     })
   }
