@@ -1,0 +1,110 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const events_1 = require("events");
+const node_log_it_1 = require("node-log-it");
+const lodash_1 = require("lodash");
+const chance_1 = require("chance");
+const chance = new chance_1.Chance();
+const MODULE_NAME = 'Mesh';
+const DEFAULT_OPTIONS = {
+    startBenchmarkOnInit: true,
+    benchmarkIntervalMs: 2000,
+    minActiveNodesRequired: 2,
+    loggerOptions: {},
+};
+class Mesh extends events_1.EventEmitter {
+    constructor(nodes, options = {}) {
+        super();
+        this._isReady = false;
+        this.nodes = nodes;
+        if (this.nodes.length === 0) {
+            throw new Error('Mesh must have 1 or more nodes.');
+        }
+        this.options = lodash_1.merge({}, DEFAULT_OPTIONS, options);
+        this.logger = new node_log_it_1.Logger(MODULE_NAME, this.options.loggerOptions);
+        if (this.options.startBenchmarkOnInit) {
+            this.startBenchmark();
+        }
+        this.logger.debug('constructor completes.');
+    }
+    isReady() {
+        return this._isReady;
+    }
+    startBenchmark() {
+        this.logger.debug('startBenchmark triggered.');
+        const unknownNodes = lodash_1.filter(this.nodes, (n) => (n.isActive === undefined));
+        this.logger.debug('unknownNodes.length:', unknownNodes.length);
+        unknownNodes.forEach((n) => {
+            n.getBlockCount()
+                .then(() => {
+                this.checkMeshReady();
+            });
+        });
+        this.benchmarkIntervalId = setInterval(() => this.performBenchmark(), this.options.benchmarkIntervalMs);
+    }
+    stopBenchmark() {
+        this.logger.debug('stopBenchmark triggered.');
+        if (this.benchmarkIntervalId) {
+            clearInterval(this.benchmarkIntervalId);
+        }
+    }
+    performBenchmark() {
+        this.logger.debug('performBenchmark triggered.');
+        const node = this.getRandomNode();
+        if (node) {
+            node.getBlockCount();
+        }
+    }
+    checkMeshReady() {
+        this.logger.debug('checkMeshReady triggered.');
+        const activeNodes = this.listActiveNodes();
+        if (!this.options.minActiveNodesRequired || activeNodes.length >= this.options.minActiveNodesRequired) {
+            if (!this._isReady) {
+                this.setReady();
+                this.logger.debug('mesh is considered to be now ready.');
+            }
+        }
+    }
+    setReady() {
+        this._isReady = true;
+        this.emit('ready');
+    }
+    getFastestNode(activeOnly = true) {
+        this.logger.debug('getFastestNode triggered.');
+        let nodePool = activeOnly ? this.listActiveNodes() : this.nodes;
+        if (nodePool.length === 0) {
+            return undefined;
+        }
+        nodePool = lodash_1.filter(nodePool, (n) => (n.latency !== undefined));
+        if (nodePool.length === 0) {
+            return undefined;
+        }
+        return lodash_1.minBy(nodePool, 'latency');
+    }
+    getHighestNode(activeOnly = true) {
+        this.logger.debug('getHighestNode triggered.');
+        let nodePool = activeOnly ? this.listActiveNodes() : this.nodes;
+        if (nodePool.length === 0) {
+            return undefined;
+        }
+        nodePool = lodash_1.filter(nodePool, (n) => (n.blockHeight !== undefined));
+        if (nodePool.length === 0) {
+            return undefined;
+        }
+        return lodash_1.maxBy(nodePool, 'blockHeight');
+    }
+    getRandomNode(activeOnly = true) {
+        this.logger.debug('getRandomNode triggered.');
+        const nodePool = activeOnly ? this.listActiveNodes() : this.nodes;
+        if (nodePool.length === 0) {
+            return undefined;
+        }
+        const randomIndex = chance.natural({ min: 0, max: nodePool.length - 1 });
+        return nodePool[randomIndex];
+    }
+    listActiveNodes() {
+        return lodash_1.filter(this.nodes, { isActive: true });
+    }
+}
+exports.Mesh = Mesh;
+//# sourceMappingURL=mesh.js.map

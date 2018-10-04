@@ -23,9 +23,6 @@ export declare class Mesh extends EventEmitter {
     private setReady;
     getFastestNode(activeOnly?: boolean): Node | undefined;
     getHighestNode(activeOnly?: boolean): Node | undefined;
-    /**
-     * @param activeOnly Toggle to only pick node that is determined to be active.
-     */
     getRandomNode(activeOnly?: boolean): Node | undefined;
     private listActiveNodes;
 }
