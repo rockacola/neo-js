@@ -43,7 +43,6 @@ export class MongodbStorage extends EventEmitter {
 
     // Bootstrapping
     this.logger = new Logger(MODULE_NAME, this.options.loggerOptions)
-    // TODO: init models
     this.blockModel = this.getBlockModel()
     this.initConnection()
 
@@ -123,7 +122,7 @@ export class MongodbStorage extends EventEmitter {
     })
   }
 
-  setBlockCount(blockHeight: number) {
+  setBlockCount(blockHeight: number): Promise<void> {
     throw new Error('Not implemented.')
   }
 
