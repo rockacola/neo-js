@@ -5,7 +5,6 @@
   "main": "dist/neo",
   "types": "dist/neo",
   "scripts": {
-    "webpack": "webpack",
     "mocha": "mocha",
     "tsc": "tsc",
     "dev": "tsc ./src/**/*.ts --watch --outDir ./dist",
@@ -34,10 +33,7 @@
     "@types/node": "^10.7.1",
     "chai": "^4.1.2",
     "mocha": "^5.2.0",
-    "ts-loader": "^5.2.1",
-    "typescript": "^3.1.1",
-    "webpack": "^4.16.5",
-    "webpack-cli": "^3.1.0"
+    "typescript": "^3.1.1"
   },
   "dependencies": {
     "@cityofzion/neon-js": "3.10.0",
