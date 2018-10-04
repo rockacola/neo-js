@@ -68,7 +68,7 @@ export class Api extends EventEmitter {
     if (this.storage) {
       const height = <number> payload.result.height
       const block = <object> payload.result.block
-      this.storage.setBlock(height, block, {})
+      this.storage.setBlock(height, block, 'source:TBA')
     }
   }
 

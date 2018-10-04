@@ -8,6 +8,7 @@ mongoose.Promise = global.Promise // Explicitly supply promise library (http://m
 const MODULE_NAME = 'MongodbStorage'
 const DEFAULT_OPTIONS: MongodbStorageOptions = {
   connectOnInit: true,
+  userAgent: 'Unknown',
   collectionNames: {
     blocks: 'blocks',
     transactions: 'transactions',
@@ -19,6 +20,7 @@ const DEFAULT_OPTIONS: MongodbStorageOptions = {
 export interface MongodbStorageOptions {
   connectOnInit?: boolean,
   connectionString?: string,
+  userAgent?: string,
   collectionNames?: {
     blocks?: string,
     transactions?: string,
@@ -55,9 +57,8 @@ export class MongodbStorage extends EventEmitter {
   private getBlockModel() {
     const schema = new Schema({
       height: Number,
-      source: {
-        endpoint: String,
-      },
+      createdBy: String,
+      source: String,
       payload: {
         hash: String,
         size: Number,
@@ -144,12 +145,13 @@ export class MongodbStorage extends EventEmitter {
     })
   }
 
-  setBlock(height: number, block: object, source: object): Promise<void> {
+  setBlock(height: number, block: object, source: string): Promise<void> {
     this.logger.debug('setBlock triggered.')
 
     const data = {
       height,
       source,
+      createdBy: this.options.userAgent,
       payload: block,
     }
     return new Promise((resolve, reject) => {

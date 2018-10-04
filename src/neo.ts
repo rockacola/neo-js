@@ -11,7 +11,6 @@ import { EndpointValidator } from './validators/endpoint-validator'
 import profiles from './common/profiles'
 import C from './common/constants'
 
-
 const MODULE_NAME = 'Neo'
 const DEFAULT_OPTIONS: NeoOptions = {
   network: C.network.testnet,
@@ -63,6 +62,10 @@ export class Neo extends EventEmitter {
     return profiles.version
   }
 
+  get UserAgent(): string {
+    return `neo-js:${this.VERSION}`
+  }
+
   private getMesh(): Mesh {
     this.logger.debug('getMesh triggered.')
     const nodes = this.getNodes()
@@ -76,7 +79,8 @@ export class Neo extends EventEmitter {
     } else if (this.options.storageType === C.storage.memory) {
       return new MemoryStorage(this.options.storageOptions)
     } else if (this.options.storageType === C.storage.mongodb) {
-      return new MongodbStorage(this.options.storageOptions)
+      const mongoStorageOptions = merge({}, this.options.storageOptions, { userAgent: this.UserAgent })
+      return new MongodbStorage(mongoStorageOptions)
     } else {
       throw new Error(`Unknown storageType [${this.options.storageType}]`)
     }
