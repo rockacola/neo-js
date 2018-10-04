@@ -7,7 +7,7 @@
   "scripts": {
     "mocha": "mocha",
     "tsc": "tsc",
-    "dev": "tsc ./src/**/*.ts --watch --outDir ./dist",
+    "dev": "tsc --watch",
     "clean": "rm -rf ./dist",
     "build": "npm run clean && tsc",
     "rebuild": "rm -rf ./node_modules && npm install && npm run build",
