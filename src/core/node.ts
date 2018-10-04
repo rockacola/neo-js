@@ -23,8 +23,8 @@ export class Node extends EventEmitter {
   public latency: number | undefined // In milliseconds
   public blockHeight: number | undefined
   public lastSeenTimestamp: number | undefined
+  public endpoint: string
 
-  private endpoint: string
   private options: NodeOptions
   private logger: Logger
 

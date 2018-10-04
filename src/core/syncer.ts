@@ -197,7 +197,8 @@ export class Syncer extends EventEmitter {
 
       node.getBlock(height)
         .then((block) => {
-          this.storage!.setBlock(height, block, 'source:TBA')
+          const source = node.endpoint
+          this.storage!.setBlock(height, block, source)
             .then((res) => {
               this.logger.debug('setBlock succeeded. For height:', height)
               this.emit('storeBlock:complete', { isSuccess: true, height })
