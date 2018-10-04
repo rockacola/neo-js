@@ -10,7 +10,7 @@
     "tsc": "tsc",
     "dev": "tsc ./src/**/*.ts --watch --outDir ./dist",
     "clean": "rm -rf ./dist",
-    "build": "npm run clean && webpack",
+    "build": "npm run clean && tsc",
     "rebuild": "rm -rf ./node_modules && npm install && npm run build",
     "rebuild:hard": "rm -f ./package-lock.json && npm run rebuild",
     "test": "mocha --reporter spec"
