@@ -1,10 +1,8 @@
 import { EventEmitter } from 'events'
 import { Logger, LoggerOptions } from 'node-log-it'
-import { merge, filter, minBy, maxBy } from 'lodash'
-import { Chance } from 'chance'
+import { merge, filter, minBy, maxBy, random } from 'lodash'
 import { Node } from './node'
 
-const chance = new Chance()
 const MODULE_NAME = 'Mesh'
 const DEFAULT_OPTIONS: MeshOptions = {
   startBenchmarkOnInit: true,
@@ -145,7 +143,7 @@ export class Mesh extends EventEmitter {
       return undefined
     }
 
-    const randomIndex = chance.natural({ min: 0, max: nodePool.length-1 })
+    const randomIndex = random(0, nodePool.length-1)
     return nodePool[randomIndex]
   }
 
