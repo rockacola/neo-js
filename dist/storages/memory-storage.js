@@ -45,7 +45,7 @@ class MemoryStorage extends events_1.EventEmitter {
         this.blockCollection.push({ height, block });
         return Promise.resolve();
     }
-    listMissingBlocks(startHeight, endHeight) {
+    analyzeBlocks(startHeight, endHeight) {
         throw new Error('Not implemented.');
     }
     disconnect() {

@@ -4,7 +4,6 @@ const events_1 = require("events");
 const node_log_it_1 = require("node-log-it");
 const lodash_1 = require("lodash");
 const mongoose_1 = require("mongoose");
-const lodash_2 = require("lodash");
 const mongoose = new mongoose_1.Mongoose();
 mongoose.Promise = global.Promise;
 const MODULE_NAME = 'MongodbStorage';
@@ -130,26 +129,30 @@ class MongodbStorage extends events_1.EventEmitter {
             });
         });
     }
-    listMissingBlocks(startHeight, endHeight) {
-        this.logger.debug('listMissingBlocks triggered.');
+    analyzeBlocks(startHeight, endHeight) {
+        this.logger.debug('analyzeBlockHeight triggered.');
         return new Promise((resolve, reject) => {
-            let available = [];
-            this.logger.info('Scanning for missing blocks.  startHeight:', startHeight, 'endHeight:', endHeight);
-            let stream = this.blockModel.find({ height: { $gte: startHeight, $lte: endHeight } }, 'height').cursor();
-            stream.on('data', (doc) => {
-                available.push(doc.height);
-            })
-                .on('error', (err) => {
-                this.logger.warn('Error on finding block heights:', err);
-                reject(err);
-            })
-                .on('close', () => {
-                let all = [];
-                for (let i = startHeight; i <= endHeight; i++) {
-                    all.push(i);
+            const aggregatorOptions = [
+                {
+                    $group: {
+                        _id: '$height',
+                        count: { $sum: 1 },
+                    },
+                },
+                {
+                    $match: {
+                        _id: {
+                            $gte: startHeight,
+                            $lte: endHeight,
+                        },
+                    },
+                },
+            ];
+            this.blockModel.aggregate(aggregatorOptions, (err, res) => {
+                if (err) {
+                    return reject(err);
                 }
-                const missing = lodash_2.difference(all, available);
-                resolve(missing);
+                return resolve(res);
             });
         });
     }

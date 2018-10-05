@@ -5,6 +5,8 @@ import { Mesh } from './mesh';
 import { MemoryStorage } from '../storages/memory-storage';
 import { MongodbStorage } from '../storages/mongodb-storage';
 export interface SyncerOptions {
+    minHeight?: number;
+    maxHeight?: number;
     startOnInit?: boolean;
     workerCount?: number;
     doEnqueueBlockIntervalMs?: number;
@@ -24,8 +26,8 @@ export declare class Syncer extends EventEmitter {
     private storage?;
     private options;
     private logger;
-    private enqueueBlockIntervalId;
-    private blockVerificationIntervalId;
+    private enqueueBlockIntervalId?;
+    private blockVerificationIntervalId?;
     constructor(mesh: Mesh, storage?: MemoryStorage | MongodbStorage, options?: SyncerOptions);
     isRunning(): boolean;
     start(): void;

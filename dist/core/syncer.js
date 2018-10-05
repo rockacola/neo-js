@@ -6,6 +6,8 @@ const node_log_it_1 = require("node-log-it");
 const lodash_1 = require("lodash");
 const MODULE_NAME = 'Syncer';
 const DEFAULT_OPTIONS = {
+    minHeight: 1,
+    maxHeight: undefined,
     startOnInit: true,
     workerCount: 30,
     doEnqueueBlockIntervalMs: 2000,
@@ -22,8 +24,6 @@ class Syncer extends events_1.EventEmitter {
         super();
         this._isRunning = false;
         this.blockWritePointer = 0;
-        this.enqueueBlockIntervalId = undefined;
-        this.blockVerificationIntervalId = undefined;
         this.mesh = mesh;
         this.storage = storage;
         this.options = lodash_1.merge({}, DEFAULT_OPTIONS, options);
@@ -43,7 +43,7 @@ class Syncer extends events_1.EventEmitter {
             this.logger.info('Syncer has already started.');
             return;
         }
-        this.logger.info('Start syncer.');
+        this.logger.info('Start syncer. minHeight:', this.options.minHeight, 'maxHeight:', this.options.maxHeight);
         this._isRunning = true;
         this.emit('start');
         this.initEnqueueBlock();
@@ -80,7 +80,7 @@ class Syncer extends events_1.EventEmitter {
                 this.emit('syncer:run:complete', { isSuccess: true, task });
             })
                 .catch((err) => {
-                this.logger.warn(`Task execution error. attrs: [${attrs}]. Continue...`);
+                this.logger.info('Task execution error, but to continue... attrs:', attrs);
                 callback();
                 this.emit('syncer:run:complete', { isSuccess: false, task });
             });
@@ -100,9 +100,15 @@ class Syncer extends events_1.EventEmitter {
     }
     doEnqueueBlock() {
         this.logger.debug('doEnqueueBlock triggered.');
+        if (this.options.maxHeight && this.blockWritePointer >= this.options.maxHeight) {
+            this.logger.info(`BlockWritePointer is greater or equal to designated maxHeight [${this.options.maxHeight}]. There will be no enqueue block beyond this point.`);
+            return;
+        }
         const node = this.mesh.getHighestNode();
         if (node) {
-            while ((this.blockWritePointer < node.blockHeight) && (this.queue.length() < this.options.maxQueueLength)) {
+            while ((!this.options.maxHeight || this.blockWritePointer < this.options.maxHeight)
+                && (this.blockWritePointer < node.blockHeight)
+                && (this.queue.length() < this.options.maxQueueLength)) {
                 this.increaseBlockWritePointer();
                 this.enqueueBlock(this.blockWritePointer, this.options.standardEnqueueBlockPriority);
             }
@@ -117,13 +123,19 @@ class Syncer extends events_1.EventEmitter {
             this.storage.getBlockCount()
                 .then((height) => {
                 this.logger.debug('getBlockCount success. height:', height);
-                this.blockWritePointer = height;
+                if (this.options.minHeight && height < this.options.minHeight) {
+                    this.logger.info(`storage height is smaller than designated minHeight. BlockWritePointer will be set to minHeight [${this.options.minHeight}] instead.`);
+                    this.blockWritePointer = this.options.minHeight;
+                }
+                else {
+                    this.blockWritePointer = height;
+                }
                 resolve();
             })
                 .catch((err) => {
                 this.logger.warn('storage.getBlockCount() failed. Error:', err.message);
                 this.logger.info('Assumed that there are no blocks.');
-                this.blockWritePointer = 0;
+                this.blockWritePointer = this.options.minHeight;
                 resolve();
             });
         });
@@ -136,12 +148,19 @@ class Syncer extends events_1.EventEmitter {
     }
     doBlockVerification() {
         this.logger.debug('doBlockVerification triggered.');
-        const startHeight = 1;
-        const endHeight = this.blockWritePointer;
-        this.storage.listMissingBlocks(startHeight, endHeight)
+        const startHeight = this.options.minHeight;
+        const endHeight = (this.options.maxHeight && this.blockWritePointer > this.options.maxHeight) ? this.options.maxHeight : this.blockWritePointer;
+        this.storage.analyzeBlocks(startHeight, endHeight)
             .then((res) => {
-            this.logger.info('Blocks missing count:', res.length);
-            res.forEach((height) => {
+            let all = [];
+            for (let i = startHeight; i <= endHeight; i++) {
+                all.push(i);
+            }
+            const available = lodash_1.map(res, (item) => item._id);
+            this.logger.info('Blocks available count:', available.length);
+            const missing = lodash_1.difference(all, available);
+            this.logger.info('Blocks missing count:', missing.length);
+            missing.forEach((height) => {
                 this.enqueueBlock(height, this.options.verifyEnqueueBlockPriority);
             });
         });
