@@ -8,8 +8,12 @@ export interface SyncerOptions {
     startOnInit?: boolean;
     workerCount?: number;
     doEnqueueBlockIntervalMs?: number;
+    verifyBlocksIntervalMs?: number;
     maxQueueLength?: number;
     reQueueDelayMs?: number;
+    standardEnqueueBlockPriority?: number;
+    retryEnqueueBlockPriority?: number;
+    verifyEnqueueBlockPriority?: number;
     loggerOptions?: LoggerOptions;
 }
 export declare class Syncer extends EventEmitter {
@@ -21,6 +25,7 @@ export declare class Syncer extends EventEmitter {
     private options;
     private logger;
     private enqueueBlockIntervalId;
+    private blockVerificationIntervalId;
     constructor(mesh: Mesh, storage?: MemoryStorage | MongodbStorage, options?: SyncerOptions);
     isRunning(): boolean;
     start(): void;
@@ -29,6 +34,9 @@ export declare class Syncer extends EventEmitter {
     private getPriorityQueue;
     private initEnqueueBlock;
     private doEnqueueBlock;
+    private setBlockWritePointer;
+    private initBlockVerification;
+    private doBlockVerification;
     private increaseBlockWritePointer;
     private enqueueBlock;
     private storeBlock;

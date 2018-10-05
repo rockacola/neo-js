@@ -13,7 +13,7 @@ const network = 'mainnet'
 const dbConnectOnInit = true
 const dbConnectionString = 'mongodb://localhost/neo_mainnet'
 const blockCollectionName = 'blocks'
-const syncDurationMs = 5 * 60 * 1000
+const syncDurationMs = 15 * 60 * 1000
 
 // -- Implementation
 
@@ -28,13 +28,13 @@ const syncDurationMs = 5 * 60 * 1000
       collectionNames: {
         blocks: blockCollectionName,
       },
-      loggerOptions: { level: 'warn' },
+      loggerOptions: { level: 'info' },
     },
     meshOptions: {
       loggerOptions: { level: 'warn' },
     },
     syncerOptions: {
-      loggerOptions: { level: 'warn' },
+      loggerOptions: { level: 'info' },
     },
     loggerOptions: { level: 'warn' },
   })

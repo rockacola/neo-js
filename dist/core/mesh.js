@@ -3,8 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const events_1 = require("events");
 const node_log_it_1 = require("node-log-it");
 const lodash_1 = require("lodash");
-const chance_1 = require("chance");
-const chance = new chance_1.Chance();
 const MODULE_NAME = 'Mesh';
 const DEFAULT_OPTIONS = {
     startBenchmarkOnInit: true,
@@ -99,7 +97,7 @@ class Mesh extends events_1.EventEmitter {
         if (nodePool.length === 0) {
             return undefined;
         }
-        const randomIndex = chance.natural({ min: 0, max: nodePool.length - 1 });
+        const randomIndex = lodash_1.random(0, nodePool.length - 1);
         return nodePool[randomIndex];
     }
     listActiveNodes() {

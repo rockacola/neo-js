@@ -9,8 +9,12 @@ const DEFAULT_OPTIONS = {
     startOnInit: true,
     workerCount: 30,
     doEnqueueBlockIntervalMs: 2000,
+    verifyBlocksIntervalMs: 1 * 60 * 1000,
     maxQueueLength: 10000,
     reQueueDelayMs: 2000,
+    standardEnqueueBlockPriority: 5,
+    retryEnqueueBlockPriority: 3,
+    verifyEnqueueBlockPriority: 1,
     loggerOptions: {},
 };
 class Syncer extends events_1.EventEmitter {
@@ -19,6 +23,7 @@ class Syncer extends events_1.EventEmitter {
         this._isRunning = false;
         this.blockWritePointer = 0;
         this.enqueueBlockIntervalId = undefined;
+        this.blockVerificationIntervalId = undefined;
         this.mesh = mesh;
         this.storage = storage;
         this.options = lodash_1.merge({}, DEFAULT_OPTIONS, options);
@@ -42,6 +47,7 @@ class Syncer extends events_1.EventEmitter {
         this._isRunning = true;
         this.emit('start');
         this.initEnqueueBlock();
+        this.initBlockVerification();
     }
     stop() {
         if (!this._isRunning) {
@@ -51,15 +57,14 @@ class Syncer extends events_1.EventEmitter {
         this.logger.info('Stop syncer.');
         this._isRunning = false;
         this.emit('stop');
-        if (this.enqueueBlockIntervalId) {
-            clearInterval(this.enqueueBlockIntervalId);
-        }
+        clearInterval(this.enqueueBlockIntervalId);
+        clearInterval(this.blockVerificationIntervalId);
     }
     storeBlockCompleteHandler(payload) {
         if (payload.isSuccess === false) {
             this.logger.debug('storeBlockCompleteHandler !isSuccess triggered.');
             setTimeout(() => {
-                this.enqueueBlock(payload.height);
+                this.enqueueBlock(payload.height, this.options.retryEnqueueBlockPriority);
             }, this.options.reQueueDelayMs);
         }
     }
@@ -75,8 +80,7 @@ class Syncer extends events_1.EventEmitter {
                 this.emit('syncer:run:complete', { isSuccess: true, task });
             })
                 .catch((err) => {
-                this.logger.warn(`Task execution error. Method: [${method}]. Continue...`);
-                this.logger.info('Error:', err);
+                this.logger.warn(`Task execution error. attrs: [${attrs}]. Continue...`);
                 callback();
                 this.emit('syncer:run:complete', { isSuccess: false, task });
             });
@@ -84,10 +88,8 @@ class Syncer extends events_1.EventEmitter {
     }
     initEnqueueBlock() {
         this.logger.debug('initEnqueueBlock triggered.');
-        this.storage.getBlockCount()
-            .then((height) => {
-            this.logger.debug('getBlockCount success. height:', height);
-            this.blockWritePointer = height;
+        this.setBlockWritePointer()
+            .then(() => {
             this.enqueueBlockIntervalId = setInterval(() => {
                 this.doEnqueueBlock();
             }, this.options.doEnqueueBlockIntervalMs);
@@ -102,18 +104,53 @@ class Syncer extends events_1.EventEmitter {
         if (node) {
             while ((this.blockWritePointer < node.blockHeight) && (this.queue.length() < this.options.maxQueueLength)) {
                 this.increaseBlockWritePointer();
-                this.enqueueBlock(this.blockWritePointer);
+                this.enqueueBlock(this.blockWritePointer, this.options.standardEnqueueBlockPriority);
             }
         }
         else {
             this.logger.error('Unable to find a valid node.');
         }
     }
+    setBlockWritePointer() {
+        this.logger.debug('setBlockWritePointer triggered.');
+        return new Promise((resolve, reject) => {
+            this.storage.getBlockCount()
+                .then((height) => {
+                this.logger.debug('getBlockCount success. height:', height);
+                this.blockWritePointer = height;
+                resolve();
+            })
+                .catch((err) => {
+                this.logger.warn('storage.getBlockCount() failed. Error:', err.message);
+                this.logger.info('Assumed that there are no blocks.');
+                this.blockWritePointer = 0;
+                resolve();
+            });
+        });
+    }
+    initBlockVerification() {
+        this.logger.debug('initEnqueueBlock triggered.');
+        this.blockVerificationIntervalId = setInterval(() => {
+            this.doBlockVerification();
+        }, this.options.verifyBlocksIntervalMs);
+    }
+    doBlockVerification() {
+        this.logger.debug('doBlockVerification triggered.');
+        const startHeight = 1;
+        const endHeight = this.blockWritePointer;
+        this.storage.listMissingBlocks(startHeight, endHeight)
+            .then((res) => {
+            this.logger.info('Blocks missing count:', res.length);
+            res.forEach((height) => {
+                this.enqueueBlock(height, this.options.verifyEnqueueBlockPriority);
+            });
+        });
+    }
     increaseBlockWritePointer() {
         this.logger.debug('increaseBlockWritePointer triggered.');
         this.blockWritePointer += 1;
     }
-    enqueueBlock(height, priority = 5) {
+    enqueueBlock(height, priority) {
         this.logger.debug('enqueueBlock triggered. height:', height, 'priority:', priority);
         this.emit('enqueueBlock:init', { height, priority });
         if (height > this.blockWritePointer) {
