@@ -13,6 +13,7 @@ const network = 'mainnet'
 const dbConnectOnInit = true
 const dbConnectionString = 'mongodb://localhost/neo_mainnet'
 const blockCollectionName = 'blocks'
+const syncDurationMs = 5 * 60 * 1000
 
 // -- Implementation
 
@@ -39,6 +40,14 @@ const blockCollectionName = 'blocks'
   })
 
 
+  // Fetch Info
+  neo.mesh.on('ready', async () => {
+    const chainBlockCount = await neo.mesh.getHighestNode().getBlockCount()
+    console.log('Highest Block Count:', chainBlockCount)
+    const storageBlockCount = await neo.storage.getBlockCount()
+    console.log('Highest Count in Storage:', storageBlockCount)
+  })
+
   // Live Report
   const report = {
     success: [],
@@ -60,7 +69,7 @@ const blockCollectionName = 'blocks'
       })
     }
   })
-  setInterval(() => { // Generate report periodically
+  const reportIntervalId = setInterval(() => { // Generate report periodically
     if (report.success.length > 0) {
       report.max = neo.mesh.getHighestNode().blockHeight
       const msElapsed = moment().diff(report.startDate)
@@ -73,4 +82,13 @@ const blockCollectionName = 'blocks'
       console.log('No sync progress yet...')
     }
   }, 5000)
+
+  if (syncDurationMs) {
+    console.log(`Sync process with stop after ${syncDurationMs} ms...`)
+    setTimeout(() => {
+      neo.close()
+      clearInterval(reportIntervalId)
+      console.log('=== THE END ===')
+    }, syncDurationMs)
+  }
 })()
