@@ -132,12 +132,8 @@ export class Syncer extends EventEmitter {
 
   private initEnqueueBlock() {
     this.logger.debug('initEnqueueBlock triggered.')
-    
-    this.storage!.getBlockCount()
-      .then((height: number) => {
-        this.logger.debug('getBlockCount success. height:', height)
-        this.blockWritePointer = height
-
+    this.setBlockWritePointer()
+      .then(() => {
         this.enqueueBlockIntervalId = setInterval(() => { // Enqueue blocks for download
           this.doEnqueueBlock()
         }, this.options.doEnqueueBlockIntervalMs!)
@@ -160,6 +156,24 @@ export class Syncer extends EventEmitter {
     } else {
       this.logger.error('Unable to find a valid node.')
     }
+  }
+
+  private setBlockWritePointer(): Promise<void> {
+    this.logger.debug('setBlockWritePointer triggered.')
+    return new Promise((resolve, reject) => {
+      this.storage!.getBlockCount()
+        .then((height: number) => {
+          this.logger.debug('getBlockCount success. height:', height)
+          this.blockWritePointer = height
+          resolve()
+        })
+        .catch((err) => {
+          this.logger.warn('storage.getBlockCount() failed. Error:', err.message)
+          this.logger.info('Assumed that there are no blocks.')
+          this.blockWritePointer = 0
+          resolve()
+        })
+    })
   }
 
   private increaseBlockWritePointer() {
