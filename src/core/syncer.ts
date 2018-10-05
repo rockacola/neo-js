@@ -133,7 +133,7 @@ export class Syncer extends EventEmitter {
           this.emit('syncer:run:complete', { isSuccess: true, task })
         })
         .catch((err: Error) => {
-          this.logger.warn(`Task execution error. attrs: [${attrs}]. Continue...`)
+          this.logger.info('Task execution error, but to continue... attrs:', attrs)
           // this.logger.info('Error:', err)
           callback()
           this.emit('syncer:run:complete', { isSuccess: false, task })
