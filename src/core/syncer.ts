@@ -15,6 +15,9 @@ const DEFAULT_OPTIONS: SyncerOptions = {
   verifyBlocksIntervalMs: 1 * 60 * 1000,
   maxQueueLength: 10000,
   reQueueDelayMs: 2000,
+  standardEnqueueBlockPriority: 5,
+  retryEnqueueBlockPriority: 3,
+  verifyEnqueueBlockPriority: 1,
   loggerOptions: {},
 }
 
@@ -25,6 +28,9 @@ export interface SyncerOptions {
   verifyBlocksIntervalMs?: number,
   maxQueueLength?: number,
   reQueueDelayMs?: number,
+  standardEnqueueBlockPriority?: number,
+  retryEnqueueBlockPriority?: number,
+  verifyEnqueueBlockPriority?: number,
   loggerOptions?: LoggerOptions,
 }
 
@@ -99,7 +105,7 @@ export class Syncer extends EventEmitter {
     if (payload.isSuccess === false) {
       this.logger.debug('storeBlockCompleteHandler !isSuccess triggered.')
       setTimeout(() => { // Re-queue the method when failed after an injected delay
-        this.enqueueBlock(payload.height)
+        this.enqueueBlock(payload.height, this.options.retryEnqueueBlockPriority)
       }, this.options.reQueueDelayMs!)
     }
   }
@@ -152,7 +158,7 @@ export class Syncer extends EventEmitter {
       // TODO: undefined param handler
       while ((this.blockWritePointer! < node.blockHeight!) && (this.queue.length() < this.options.maxQueueLength!)) {
         this.increaseBlockWritePointer()
-        this.enqueueBlock(this.blockWritePointer!)
+        this.enqueueBlock(this.blockWritePointer!, this.options.standardEnqueueBlockPriority)
       }
     } else {
       this.logger.error('Unable to find a valid node.')
@@ -194,7 +200,7 @@ export class Syncer extends EventEmitter {
 
         // Enqueue missing block heights
         res.forEach((height: number) => {
-          this.enqueueBlock(height, 1)
+          this.enqueueBlock(height, this.options.verifyEnqueueBlockPriority)
         })
       })
   }
@@ -207,7 +213,7 @@ export class Syncer extends EventEmitter {
   /**
    * @param priority Lower value, the higher its priority to be executed.
    */
-  private enqueueBlock(height: number, priority = 5) {
+  private enqueueBlock(height: number, priority) {
     this.logger.debug('enqueueBlock triggered. height:', height, 'priority:', priority)
     this.emit('enqueueBlock:init', { height, priority })
 
