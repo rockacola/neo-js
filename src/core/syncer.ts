@@ -34,6 +34,7 @@ export class Syncer extends EventEmitter {
   private storage?: MemoryStorage | MongodbStorage
   private options: SyncerOptions
   private logger: Logger
+  private enqueueBlockIntervalId: NodeJS.Timer = undefined
 
   constructor(mesh: Mesh, storage?: MemoryStorage | MongodbStorage, options: SyncerOptions = {}) {
     super()
@@ -68,7 +69,7 @@ export class Syncer extends EventEmitter {
       return
     }
 
-    this.logger.debug('Start syncer.')
+    this.logger.info('Start syncer.')
     this._isRunning = true
     this.emit('start')
 
@@ -84,11 +85,13 @@ export class Syncer extends EventEmitter {
       return
     }
 
-    this.logger.debug('Stop syncer.')
+    this.logger.info('Stop syncer.')
     this._isRunning = false
     this.emit('stop')
 
-    // TODO
+    if (this.enqueueBlockIntervalId) {
+      clearInterval(this.enqueueBlockIntervalId)
+    }
   }
 
   private storeBlockCompleteHandler(payload: any) {
@@ -115,7 +118,7 @@ export class Syncer extends EventEmitter {
       method(attrs)
         .then(() => {
           callback()
-          this.logger.info('queued method run completed.')
+          this.logger.debug('queued method run completed.')
           this.emit('syncer:run:complete', { isSuccess: true, task })
         })
         .catch((err: Error) => {
@@ -135,7 +138,7 @@ export class Syncer extends EventEmitter {
         this.logger.debug('getBlockCount success. height:', height)
         this.blockWritePointer = height
 
-        setInterval(() => { // Enqueue blocks for download
+        this.enqueueBlockIntervalId = setInterval(() => { // Enqueue blocks for download
           this.doEnqueueBlock()
         }, this.options.doEnqueueBlockIntervalMs!)
       })

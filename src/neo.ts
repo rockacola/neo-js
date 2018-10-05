@@ -123,6 +123,9 @@ export class Neo extends EventEmitter {
 
   close() {
     this.logger.debug('close triggered.')
+    if (this.syncer) {
+      this.syncer.stop()
+    }
     if (this.mesh) {
       this.mesh.stopBenchmark()
     }
