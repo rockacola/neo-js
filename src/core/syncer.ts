@@ -42,8 +42,8 @@ export class Syncer extends EventEmitter {
   private storage?: MemoryStorage | MongodbStorage
   private options: SyncerOptions
   private logger: Logger
-  private enqueueBlockIntervalId: NodeJS.Timer = undefined
-  private blockVerificationIntervalId: NodeJS.Timer = undefined
+  private enqueueBlockIntervalId?: NodeJS.Timer
+  private blockVerificationIntervalId?: NodeJS.Timer
 
   constructor(mesh: Mesh, storage?: MemoryStorage | MongodbStorage, options: SyncerOptions = {}) {
     super()
@@ -97,15 +97,15 @@ export class Syncer extends EventEmitter {
     this._isRunning = false
     this.emit('stop')
 
-    clearInterval(this.enqueueBlockIntervalId)
-    clearInterval(this.blockVerificationIntervalId)
+    clearInterval(this.enqueueBlockIntervalId!)
+    clearInterval(this.blockVerificationIntervalId!)
   }
 
   private storeBlockCompleteHandler(payload: any) {
     if (payload.isSuccess === false) {
       this.logger.debug('storeBlockCompleteHandler !isSuccess triggered.')
       setTimeout(() => { // Re-queue the method when failed after an injected delay
-        this.enqueueBlock(payload.height, this.options.retryEnqueueBlockPriority)
+        this.enqueueBlock(payload.height, this.options.retryEnqueueBlockPriority!)
       }, this.options.reQueueDelayMs!)
     }
   }
@@ -158,7 +158,7 @@ export class Syncer extends EventEmitter {
       // TODO: undefined param handler
       while ((this.blockWritePointer! < node.blockHeight!) && (this.queue.length() < this.options.maxQueueLength!)) {
         this.increaseBlockWritePointer()
-        this.enqueueBlock(this.blockWritePointer!, this.options.standardEnqueueBlockPriority)
+        this.enqueueBlock(this.blockWritePointer!, this.options.standardEnqueueBlockPriority!)
       }
     } else {
       this.logger.error('Unable to find a valid node.')
@@ -187,7 +187,7 @@ export class Syncer extends EventEmitter {
     this.logger.debug('initEnqueueBlock triggered.')
     this.blockVerificationIntervalId = setInterval(() => {
         this.doBlockVerification()
-    }, this.options.verifyBlocksIntervalMs)
+    }, this.options.verifyBlocksIntervalMs!)
   }
 
   private doBlockVerification() {
@@ -200,7 +200,7 @@ export class Syncer extends EventEmitter {
 
         // Enqueue missing block heights
         res.forEach((height: number) => {
-          this.enqueueBlock(height, this.options.verifyEnqueueBlockPriority)
+          this.enqueueBlock(height, this.options.verifyEnqueueBlockPriority!)
         })
       })
   }
@@ -213,7 +213,7 @@ export class Syncer extends EventEmitter {
   /**
    * @param priority Lower value, the higher its priority to be executed.
    */
-  private enqueueBlock(height: number, priority) {
+  private enqueueBlock(height: number, priority: number) {
     this.logger.debug('enqueueBlock triggered. height:', height, 'priority:', priority)
     this.emit('enqueueBlock:init', { height, priority })
 

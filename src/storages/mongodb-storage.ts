@@ -172,10 +172,10 @@ export class MongodbStorage extends EventEmitter {
       this.logger.info('Scanning for missing blocks.  startHeight:', startHeight, 'endHeight:', endHeight)
 
       let stream = this.blockModel.find({ height: { $gte: startHeight, $lte: endHeight } }, 'height').cursor()
-      stream.on('data', (doc) => {
+      stream.on('data', (doc: any) => {
           available.push(doc.height)
         })
-        .on('error', (err) => {
+        .on('error', (err: Error) => {
           this.logger.warn('Error on finding block heights:', err)
           reject(err)
         })
