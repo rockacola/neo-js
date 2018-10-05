@@ -9,6 +9,8 @@ import { MongodbStorage } from '../storages/mongodb-storage'
 
 const MODULE_NAME = 'Syncer'
 const DEFAULT_OPTIONS: SyncerOptions = {
+  minHeight: 1,
+  maxHeight:  undefined,
   startOnInit: true,
   workerCount: 30,
   doEnqueueBlockIntervalMs: 2000,
@@ -22,6 +24,8 @@ const DEFAULT_OPTIONS: SyncerOptions = {
 }
 
 export interface SyncerOptions {
+  minHeight?: number,
+  maxHeight?: number,
   startOnInit?: boolean,
   workerCount?: number,
   doEnqueueBlockIntervalMs?: number,
@@ -78,7 +82,7 @@ export class Syncer extends EventEmitter {
       return
     }
 
-    this.logger.info('Start syncer.')
+    this.logger.info('Start syncer. minHeight:', this.options.minHeight!, 'maxHeight:', this.options.maxHeight)
     this._isRunning = true
     this.emit('start')
 
@@ -153,10 +157,17 @@ export class Syncer extends EventEmitter {
   private doEnqueueBlock() {
     this.logger.debug('doEnqueueBlock triggered.')
 
+    if (this.options.maxHeight && this.blockWritePointer >= this.options.maxHeight) {
+      this.logger.info(`BlockWritePointer is greater or equal to designated maxHeight [${this.options.maxHeight}]. There will be no enqueue block beyond this point.`)
+      return
+    }
+
     const node = this.mesh.getHighestNode()
     if (node) { // TODO: better way to validate a node
       // TODO: undefined param handler
-      while ((this.blockWritePointer! < node.blockHeight!) && (this.queue.length() < this.options.maxQueueLength!)) {
+      while ((!this.options.maxHeight || this.blockWritePointer < this.options.maxHeight)
+        && (this.blockWritePointer! < node.blockHeight!)
+        && (this.queue.length() < this.options.maxQueueLength!)) {
         this.increaseBlockWritePointer()
         this.enqueueBlock(this.blockWritePointer!, this.options.standardEnqueueBlockPriority!)
       }
@@ -171,13 +182,18 @@ export class Syncer extends EventEmitter {
       this.storage!.getBlockCount()
         .then((height: number) => {
           this.logger.debug('getBlockCount success. height:', height)
-          this.blockWritePointer = height
+          if (this.options.minHeight && height < this.options.minHeight) {
+            this.logger.info(`storage height is smaller than designated minHeight. BlockWritePointer will be set to minHeight [${this.options.minHeight}] instead.`)
+            this.blockWritePointer = this.options.minHeight
+          } else {
+            this.blockWritePointer = height
+          }
           resolve()
         })
         .catch((err) => {
           this.logger.warn('storage.getBlockCount() failed. Error:', err.message)
           this.logger.info('Assumed that there are no blocks.')
-          this.blockWritePointer = 0
+          this.blockWritePointer = this.options.minHeight!
           resolve()
         })
     })
@@ -192,8 +208,8 @@ export class Syncer extends EventEmitter {
 
   private doBlockVerification() {
     this.logger.debug('doBlockVerification triggered.')
-    const startHeight = 1
-    const endHeight = this.blockWritePointer
+    const startHeight = this.options.minHeight!
+    const endHeight = (this.options.maxHeight && this.blockWritePointer > this.options.maxHeight) ? this.options.maxHeight : this.blockWritePointer
     this.storage!.listMissingBlocks(startHeight, endHeight)
       .then((res: number[]) => {
         this.logger.info('Blocks missing count:', res.length)
