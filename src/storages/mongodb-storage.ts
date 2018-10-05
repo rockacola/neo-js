@@ -2,6 +2,7 @@ import { EventEmitter } from 'events'
 import { Logger, LoggerOptions } from 'node-log-it'
 import { merge } from 'lodash'
 import { Mongoose, Schema } from 'mongoose'
+import { difference } from 'lodash'
 const mongoose = new Mongoose()
 mongoose.Promise = global.Promise // Explicitly supply promise library (http://mongoosejs.com/docs/promises.html)
 
@@ -161,6 +162,33 @@ export class MongodbStorage extends EventEmitter {
         }
         resolve()
       })
+    })
+  }
+
+  listMissingBlocks(startHeight: number, endHeight: number): Promise<number[]> {
+    this.logger.debug('listMissingBlocks triggered.')
+    return new Promise((resolve, reject) => {
+      let available: number[] = []
+      this.logger.info('Scanning for missing blocks.  startHeight:', startHeight, 'endHeight:', endHeight)
+
+      let stream = this.blockModel.find({ height: { $gte: startHeight, $lte: endHeight } }, 'height').cursor()
+      stream.on('data', (doc) => {
+          available.push(doc.height)
+        })
+        .on('error', (err) => {
+          this.logger.warn('Error on finding block heights:', err)
+          reject(err)
+        })
+        .on('close', () => {
+          // Extract the block heights that are missing
+          let all: number[] = []
+          for (let i = startHeight; i <= endHeight; i++) {
+            all.push(i);
+          }
+
+          const missing = difference(all, available)
+          resolve(missing)
+        })
     })
   }
 

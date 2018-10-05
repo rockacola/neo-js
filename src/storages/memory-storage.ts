@@ -67,6 +67,10 @@ export class MemoryStorage extends EventEmitter {
     return Promise.resolve()
   }
 
+  listMissingBlocks(startHeight: number, endHeight: number): Promise<number[]> {
+    throw new Error('Not implemented.')
+  }
+
   disconnect(): Promise<void> {
     this.logger.debug('disconnect triggered.')
     return Promise.resolve()

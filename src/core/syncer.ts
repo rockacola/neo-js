@@ -12,6 +12,7 @@ const DEFAULT_OPTIONS: SyncerOptions = {
   startOnInit: true,
   workerCount: 30,
   doEnqueueBlockIntervalMs: 2000,
+  verifyBlocksIntervalMs: 1 * 60 * 1000,
   maxQueueLength: 10000,
   reQueueDelayMs: 2000,
   loggerOptions: {},
@@ -21,6 +22,7 @@ export interface SyncerOptions {
   startOnInit?: boolean,
   workerCount?: number,
   doEnqueueBlockIntervalMs?: number,
+  verifyBlocksIntervalMs?: number,
   maxQueueLength?: number,
   reQueueDelayMs?: number,
   loggerOptions?: LoggerOptions,
@@ -35,6 +37,7 @@ export class Syncer extends EventEmitter {
   private options: SyncerOptions
   private logger: Logger
   private enqueueBlockIntervalId: NodeJS.Timer = undefined
+  private blockVerificationIntervalId: NodeJS.Timer = undefined
 
   constructor(mesh: Mesh, storage?: MemoryStorage | MongodbStorage, options: SyncerOptions = {}) {
     super()
@@ -73,10 +76,9 @@ export class Syncer extends EventEmitter {
     this._isRunning = true
     this.emit('start')
 
-    // TODO
     this.initEnqueueBlock()
-    // this.initBlockVerification()
-    // this.initAssetVerification()
+    this.initBlockVerification()
+    // TODO: this.initAssetVerification()
   }
 
   stop() {
@@ -89,9 +91,8 @@ export class Syncer extends EventEmitter {
     this._isRunning = false
     this.emit('stop')
 
-    if (this.enqueueBlockIntervalId) {
-      clearInterval(this.enqueueBlockIntervalId)
-    }
+    clearInterval(this.enqueueBlockIntervalId)
+    clearInterval(this.blockVerificationIntervalId)
   }
 
   private storeBlockCompleteHandler(payload: any) {
@@ -122,8 +123,8 @@ export class Syncer extends EventEmitter {
           this.emit('syncer:run:complete', { isSuccess: true, task })
         })
         .catch((err: Error) => {
-          this.logger.warn(`Task execution error. Method: [${method}]. Continue...`)
-          this.logger.info('Error:', err)
+          this.logger.warn(`Task execution error. attrs: [${attrs}]. Continue...`)
+          // this.logger.info('Error:', err)
           callback()
           this.emit('syncer:run:complete', { isSuccess: false, task })
         })
@@ -176,11 +177,36 @@ export class Syncer extends EventEmitter {
     })
   }
 
+  private initBlockVerification() {
+    this.logger.debug('initEnqueueBlock triggered.')
+    this.blockVerificationIntervalId = setInterval(() => {
+        this.doBlockVerification()
+    }, this.options.verifyBlocksIntervalMs)
+  }
+
+  private doBlockVerification() {
+    this.logger.debug('doBlockVerification triggered.')
+    const startHeight = 1
+    const endHeight = this.blockWritePointer
+    this.storage!.listMissingBlocks(startHeight, endHeight)
+      .then((res: number[]) => {
+        this.logger.info('Blocks missing count:', res.length)
+
+        // Enqueue missing block heights
+        res.forEach((height: number) => {
+          this.enqueueBlock(height, 1)
+        })
+      })
+  }
+
   private increaseBlockWritePointer() {
     this.logger.debug('increaseBlockWritePointer triggered.')
     this.blockWritePointer += 1
   }
 
+  /**
+   * @param priority Lower value, the higher its priority to be executed.
+   */
   private enqueueBlock(height: number, priority = 5) {
     this.logger.debug('enqueueBlock triggered. height:', height, 'priority:', priority)
     this.emit('enqueueBlock:init', { height, priority })
