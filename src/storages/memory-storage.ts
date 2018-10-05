@@ -67,7 +67,7 @@ export class MemoryStorage extends EventEmitter {
     return Promise.resolve()
   }
 
-  listMissingBlocks(startHeight: number, endHeight: number): Promise<number[]> {
+  analyzeBlocks(startHeight: number, endHeight: number): Promise<object[]> {
     throw new Error('Not implemented.')
   }
 

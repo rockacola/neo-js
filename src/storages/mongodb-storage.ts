@@ -165,30 +165,41 @@ export class MongodbStorage extends EventEmitter {
     })
   }
 
-  listMissingBlocks(startHeight: number, endHeight: number): Promise<number[]> {
-    this.logger.debug('listMissingBlocks triggered.')
+  analyzeBlocks(startHeight: number, endHeight: number): Promise<object[]> {
+    this.logger.debug('analyzeBlockHeight triggered.')
+    /**
+     * Example result:
+     * [
+     *   { _id: 1, count: 1 },
+     *   { _id: 2, count: 4 },
+     *   ...
+     * ]
+     */
     return new Promise((resolve, reject) => {
-      let available: number[] = []
-      this.logger.info('Scanning for missing blocks.  startHeight:', startHeight, 'endHeight:', endHeight)
+      const aggregatorOptions = [
+        {
+          $group: {
+            _id: '$height',
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $match: {
+            _id: { // This '_id' is now referring to $height as designated in $group
+              $gte: startHeight,
+              $lte: endHeight,
+            },
+          },
+        },
+      ]
 
-      let stream = this.blockModel.find({ height: { $gte: startHeight, $lte: endHeight } }, 'height').cursor()
-      stream.on('data', (doc: any) => {
-          available.push(doc.height)
-        })
-        .on('error', (err: Error) => {
-          this.logger.warn('Error on finding block heights:', err)
-          reject(err)
-        })
-        .on('close', () => {
-          // Extract the block heights that are missing
-          let all: number[] = []
-          for (let i = startHeight; i <= endHeight; i++) {
-            all.push(i);
-          }
+      this.blockModel.aggregate(aggregatorOptions, (err: Error, res: any) => {
+        if (err) {
+          return reject(err)
+        }
 
-          const missing = difference(all, available)
-          resolve(missing)
-        })
+        return resolve(res)
+      })
     })
   }
 

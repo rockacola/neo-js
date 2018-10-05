@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events'
 import { priorityQueue } from 'async'
 import { Logger, LoggerOptions } from 'node-log-it'
-import { merge } from 'lodash'
+import { merge, map, difference } from 'lodash'
 import { Mesh } from './mesh'
 import { MemoryStorage } from '../storages/memory-storage'
 import { MongodbStorage } from '../storages/mongodb-storage'
@@ -210,12 +210,22 @@ export class Syncer extends EventEmitter {
     this.logger.debug('doBlockVerification triggered.')
     const startHeight = this.options.minHeight!
     const endHeight = (this.options.maxHeight && this.blockWritePointer > this.options.maxHeight) ? this.options.maxHeight : this.blockWritePointer
-    this.storage!.listMissingBlocks(startHeight, endHeight)
-      .then((res: number[]) => {
-        this.logger.info('Blocks missing count:', res.length)
+
+    this.storage!.analyzeBlocks(startHeight, endHeight)
+      .then((res: object[]) => {
+        let all: number[] = []
+        for (let i = startHeight; i <= endHeight; i++) {
+          all.push(i);
+        }
+        
+        const available: number[] = map(res, (item: any) => item._id)
+        this.logger.info('Blocks available count:', available.length)
+
+        const missing = difference(all, available)
+        this.logger.info('Blocks missing count:', missing.length)
 
         // Enqueue missing block heights
-        res.forEach((height: number) => {
+        missing.forEach((height: number) => {
           this.enqueueBlock(height, this.options.verifyEnqueueBlockPriority!)
         })
       })
