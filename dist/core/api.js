@@ -41,7 +41,8 @@ class Api extends events_1.EventEmitter {
         if (this.storage) {
             const height = payload.result.height;
             const block = payload.result.block;
-            this.storage.setBlock(height, block, {});
+            const source = 'api:storeBlock';
+            this.storage.setBlock(height, block, source);
         }
     }
     getBlockCount() {

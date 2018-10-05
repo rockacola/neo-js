@@ -28,6 +28,7 @@ export declare class Neo extends EventEmitter {
     constructor(options?: NeoOptions);
     static readonly VERSION: string;
     readonly VERSION: string;
+    readonly UserAgent: string;
     private getMesh;
     private getStorage;
     private getApi;

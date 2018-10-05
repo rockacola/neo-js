@@ -34,6 +34,9 @@ class Neo extends events_1.EventEmitter {
     get VERSION() {
         return profiles_1.default.version;
     }
+    get UserAgent() {
+        return `neo-js:${this.VERSION}`;
+    }
     getMesh() {
         this.logger.debug('getMesh triggered.');
         const nodes = this.getNodes();
@@ -48,7 +51,8 @@ class Neo extends events_1.EventEmitter {
             return new memory_storage_1.MemoryStorage(this.options.storageOptions);
         }
         else if (this.options.storageType === constants_1.default.storage.mongodb) {
-            return new mongodb_storage_1.MongodbStorage(this.options.storageOptions);
+            const mongoStorageOptions = lodash_1.merge({}, this.options.storageOptions, { userAgent: this.UserAgent });
+            return new mongodb_storage_1.MongodbStorage(mongoStorageOptions);
         }
         else {
             throw new Error(`Unknown storageType [${this.options.storageType}]`);
@@ -87,6 +91,9 @@ class Neo extends events_1.EventEmitter {
     }
     close() {
         this.logger.debug('close triggered.');
+        if (this.syncer) {
+            this.syncer.stop();
+        }
         if (this.mesh) {
             this.mesh.stopBenchmark();
         }

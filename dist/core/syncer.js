@@ -18,6 +18,7 @@ class Syncer extends events_1.EventEmitter {
         super();
         this._isRunning = false;
         this.blockWritePointer = 0;
+        this.enqueueBlockIntervalId = undefined;
         this.mesh = mesh;
         this.storage = storage;
         this.options = lodash_1.merge({}, DEFAULT_OPTIONS, options);
@@ -37,7 +38,7 @@ class Syncer extends events_1.EventEmitter {
             this.logger.info('Syncer has already started.');
             return;
         }
-        this.logger.debug('Start syncer.');
+        this.logger.info('Start syncer.');
         this._isRunning = true;
         this.emit('start');
         this.initEnqueueBlock();
@@ -47,9 +48,12 @@ class Syncer extends events_1.EventEmitter {
             this.logger.info('Syncer is not running at the moment.');
             return;
         }
-        this.logger.debug('Stop syncer.');
+        this.logger.info('Stop syncer.');
         this._isRunning = false;
         this.emit('stop');
+        if (this.enqueueBlockIntervalId) {
+            clearInterval(this.enqueueBlockIntervalId);
+        }
     }
     storeBlockCompleteHandler(payload) {
         if (payload.isSuccess === false) {
@@ -67,7 +71,7 @@ class Syncer extends events_1.EventEmitter {
             method(attrs)
                 .then(() => {
                 callback();
-                this.logger.info('queued method run completed.');
+                this.logger.debug('queued method run completed.');
                 this.emit('syncer:run:complete', { isSuccess: true, task });
             })
                 .catch((err) => {
@@ -84,7 +88,7 @@ class Syncer extends events_1.EventEmitter {
             .then((height) => {
             this.logger.debug('getBlockCount success. height:', height);
             this.blockWritePointer = height;
-            setInterval(() => {
+            this.enqueueBlockIntervalId = setInterval(() => {
                 this.doEnqueueBlock();
             }, this.options.doEnqueueBlockIntervalMs);
         })
@@ -135,7 +139,8 @@ class Syncer extends events_1.EventEmitter {
             }
             node.getBlock(height)
                 .then((block) => {
-                this.storage.setBlock(height, block, {})
+                const source = node.endpoint;
+                this.storage.setBlock(height, block, source)
                     .then((res) => {
                     this.logger.debug('setBlock succeeded. For height:', height);
                     this.emit('storeBlock:complete', { isSuccess: true, height });

@@ -30,6 +30,7 @@ class MemoryStorage extends events_1.EventEmitter {
     }
     setBlockCount(blockHeight) {
         this._blockHeight = blockHeight;
+        return Promise.resolve();
     }
     getBlock(height) {
         const blockItem = lodash_1.find(this.blockCollection, { height });

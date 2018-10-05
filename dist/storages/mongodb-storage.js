@@ -9,6 +9,7 @@ mongoose.Promise = global.Promise;
 const MODULE_NAME = 'MongodbStorage';
 const DEFAULT_OPTIONS = {
     connectOnInit: true,
+    userAgent: 'Unknown',
     collectionNames: {
         blocks: 'blocks',
         transactions: 'transactions',
@@ -32,9 +33,8 @@ class MongodbStorage extends events_1.EventEmitter {
     getBlockModel() {
         const schema = new mongoose_1.Schema({
             height: Number,
-            source: {
-                endpoint: String,
-            },
+            createdBy: String,
+            source: String,
             payload: {
                 hash: String,
                 size: Number,
@@ -82,13 +82,13 @@ class MongodbStorage extends events_1.EventEmitter {
                 .exec((err, res) => {
                 if (err) {
                     this.logger.warn('blockModel.findOne() execution failed.');
-                    reject(err);
+                    return reject(err);
                 }
                 if (!res) {
-                    this.logger.warn('blockModel.findOne() executed by without response data.');
-                    reject(new Error('Unable to find response data.'));
+                    this.logger.info('blockModel.findOne() executed by without response data, hence no blocks available.');
+                    return resolve(0);
                 }
-                resolve(res.height);
+                return resolve(res.height);
             });
         });
     }
@@ -116,6 +116,7 @@ class MongodbStorage extends events_1.EventEmitter {
         const data = {
             height,
             source,
+            createdBy: this.options.userAgent,
             payload: block,
         };
         return new Promise((resolve, reject) => {

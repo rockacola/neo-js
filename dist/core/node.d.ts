@@ -11,7 +11,7 @@ export declare class Node extends EventEmitter {
     latency: number | undefined;
     blockHeight: number | undefined;
     lastSeenTimestamp: number | undefined;
-    private endpoint;
+    endpoint: string;
     private options;
     private logger;
     constructor(endpoint: string, options?: NodeOptions);
