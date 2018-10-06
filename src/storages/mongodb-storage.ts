@@ -134,8 +134,13 @@ export class MongodbStorage extends EventEmitter {
   getBlock(height: number): Promise<object> {
     this.logger.debug('getBlock triggered. height:', height)
 
+    /**
+     * NOTE:
+     * It is assumed that there may be multiple matches and will pick 'latest created' one as truth.
+     */
     return new Promise((resolve, reject) => {
       this.blockModel.findOne({ height })
+        .sort({ createdAt: -1 })
         .exec((err: any, res: any) => {
           if (err) {
             this.logger.warn('blockModel.findOne() execution failed. error:', err.message)
