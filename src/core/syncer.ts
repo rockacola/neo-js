@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events'
 import { priorityQueue } from 'async'
 import { Logger, LoggerOptions } from 'node-log-it'
-import { merge, map, difference } from 'lodash'
+import { merge, map, difference, filter } from 'lodash'
 import { Mesh } from './mesh'
 import { MemoryStorage } from '../storages/memory-storage'
 import { MongodbStorage } from '../storages/mongodb-storage'
@@ -11,6 +11,7 @@ const MODULE_NAME = 'Syncer'
 const DEFAULT_OPTIONS: SyncerOptions = {
   minHeight: 1,
   maxHeight:  undefined,
+  blockRedundancy: 1, // If value is greater than 1, than it'll keep multiple copies of same block as integrity measurement // TODO: to ensure redundant blocks are coming from unique sources
   startOnInit: true,
   workerCount: 30,
   doEnqueueBlockIntervalMs: 2000,
@@ -26,6 +27,7 @@ const DEFAULT_OPTIONS: SyncerOptions = {
 export interface SyncerOptions {
   minHeight?: number,
   maxHeight?: number,
+  blockRedundancy?: number,
   startOnInit?: boolean,
   workerCount?: number,
   doEnqueueBlockIntervalMs?: number,
@@ -58,6 +60,7 @@ export class Syncer extends EventEmitter {
 
     // Associate optional properties
     this.options = merge({}, DEFAULT_OPTIONS, options)
+    this.validateOptionalParameters()
 
     // Bootstrapping
     this.logger = new Logger(MODULE_NAME, this.options.loggerOptions)
@@ -112,6 +115,26 @@ export class Syncer extends EventEmitter {
         this.enqueueBlock(payload.height, this.options.retryEnqueueBlockPriority!)
       }, this.options.reQueueDelayMs!)
     }
+  }
+
+  private validateOptionalParameters() {
+    // TODO: validate minHeight?: number,
+    // TODO: validate maxHeight?: number,
+    if (!this.options.blockRedundancy) {
+      throw new Error('blockRedundancy parameter must be supplied.')
+    } else if (this.options.blockRedundancy !== 1) {
+      throw new Error('supplied blockRedundancy parameter is invalid. Currently only supports for value [1].')
+    }
+    // TODO: validate startOnInit?: boolean,
+    // TODO: validate workerCount?: number,
+    // TODO: validate doEnqueueBlockIntervalMs?: number,
+    // TODO: validate verifyBlocksIntervalMs?: number,
+    // TODO: validate maxQueueLength?: number,
+    // TODO: validate reQueueDelayMs?: number,
+    // TODO: validate standardEnqueueBlockPriority?: number,
+    // TODO: validate retryEnqueueBlockPriority?: number,
+    // TODO: validate verifyEnqueueBlockPriority?: number,
+    // TODO: validate loggerOptions?: LoggerOptions,
   }
 
   private getPriorityQueue(): any {
@@ -228,6 +251,18 @@ export class Syncer extends EventEmitter {
         missing.forEach((height: number) => {
           this.enqueueBlock(height, this.options.verifyEnqueueBlockPriority!)
         })
+
+        // Request pruning of excessive blocks
+        const excessive = map(filter(res, (item: any) => item.count > this.options.blockRedundancy!), (item: any) => item._id)
+        this.logger.info('Blocks excessive redundancy count:', excessive.length)
+        // TODO
+
+        // Enqueue for redundancy blocks
+        if (this.options.blockRedundancy! > 1) {
+          let insufficient = map(filter(res, (item: any) => item.count < this.options.blockRedundancy!), (item: any) => item._id)
+          this.logger.info('Blocks insufficient redundancy count:', insufficient.length)
+          // TODO
+        }
       })
   }
 
