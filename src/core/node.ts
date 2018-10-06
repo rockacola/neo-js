@@ -36,6 +36,7 @@ export class Node extends EventEmitter {
 
     // Associate optional properties
     this.options = merge({}, DEFAULT_OPTIONS, options)
+    this.validateOptionalParameters()
 
     // Bootstrapping
     this.logger = new Logger(MODULE_NAME, this.options.loggerOptions)
@@ -96,6 +97,10 @@ export class Node extends EventEmitter {
   getVersion(): Promise<object> {
     this.logger.debug('getVersion triggered.')
     return this.query(C.rpc.getversion)
+  }
+
+  private validateOptionalParameters() {
+    // TODO
   }
 
   private query(method: string, params: any[] = [], id: number = DEFAULT_ID): Promise<object> {

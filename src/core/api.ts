@@ -36,6 +36,7 @@ export class Api extends EventEmitter {
 
     // Associate optional properties
     this.options = merge({}, DEFAULT_OPTIONS, options)
+    this.validateOptionalParameters()
 
     // Bootstrapping
     this.logger = new Logger(MODULE_NAME, this.options.loggerOptions)
@@ -55,6 +56,10 @@ export class Api extends EventEmitter {
     } else {
       throw new Error('Not implemented.')
     }
+  }
+
+  private validateOptionalParameters() {
+    // TODO
   }
 
   private storeBlockCount(payload: StorageInsertPayload) {

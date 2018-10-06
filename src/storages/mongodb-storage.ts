@@ -40,6 +40,7 @@ export class MongodbStorage extends EventEmitter {
 
     // Associate optional properties
     this.options = merge({}, DEFAULT_OPTIONS, options)
+    this.validateOptionalParameters()
 
     // Bootstrapping
     this.logger = new Logger(MODULE_NAME, this.options.loggerOptions)
@@ -51,6 +52,10 @@ export class MongodbStorage extends EventEmitter {
 
   isReady(): boolean {
     return this._isReady
+  }
+
+  private validateOptionalParameters() {
+    // TODO
   }
 
   private getBlockModel() {

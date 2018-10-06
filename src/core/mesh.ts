@@ -36,6 +36,7 @@ export class Mesh extends EventEmitter {
 
     // Associate optional properties
     this.options = merge({}, DEFAULT_OPTIONS, options)
+    this.validateOptionalParameters()
 
     // Bootstrapping
     this.logger = new Logger(MODULE_NAME, this.options.loggerOptions)
@@ -72,6 +73,10 @@ export class Mesh extends EventEmitter {
     if (this.benchmarkIntervalId) {
       clearInterval(this.benchmarkIntervalId)
     }
+  }
+
+  private validateOptionalParameters() {
+    // TODO
   }
 
   private performBenchmark() {
