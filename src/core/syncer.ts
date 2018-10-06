@@ -14,13 +14,13 @@ const DEFAULT_OPTIONS: SyncerOptions = {
   blockRedundancy: 1, // If value is greater than 1, than it'll keep multiple copies of same block as integrity measurement // TODO: to ensure redundant blocks are coming from unique sources
   startOnInit: true,
   workerCount: 30,
-  doEnqueueBlockIntervalMs: 2000,
+  enqueueBlockIntervalMs: 2000,
   verifyBlocksIntervalMs: 1 * 60 * 1000,
   maxQueueLength: 10000,
-  reQueueDelayMs: 2000,
+  retryEnqueueDelayMs: 2000,
   standardEnqueueBlockPriority: 5,
   retryEnqueueBlockPriority: 3,
-  verifyEnqueueBlockPriority: 1,
+  missingEnqueueStoreBlockPriority: 1,
   loggerOptions: {},
 }
 
@@ -30,13 +30,13 @@ export interface SyncerOptions {
   blockRedundancy?: number,
   startOnInit?: boolean,
   workerCount?: number,
-  doEnqueueBlockIntervalMs?: number,
+  enqueueBlockIntervalMs?: number,
   verifyBlocksIntervalMs?: number,
   maxQueueLength?: number,
-  reQueueDelayMs?: number,
+  retryEnqueueDelayMs?: number,
   standardEnqueueBlockPriority?: number,
   retryEnqueueBlockPriority?: number,
-  verifyEnqueueBlockPriority?: number,
+  missingEnqueueStoreBlockPriority?: number,
   loggerOptions?: LoggerOptions,
 }
 
@@ -48,7 +48,7 @@ export class Syncer extends EventEmitter {
   private storage?: MemoryStorage | MongodbStorage
   private options: SyncerOptions
   private logger: Logger
-  private enqueueBlockIntervalId?: NodeJS.Timer
+  private enqueueStoreBlockIntervalId?: NodeJS.Timer
   private blockVerificationIntervalId?: NodeJS.Timer
 
   constructor(mesh: Mesh, storage?: MemoryStorage | MongodbStorage, options: SyncerOptions = {}) {
@@ -89,7 +89,7 @@ export class Syncer extends EventEmitter {
     this._isRunning = true
     this.emit('start')
 
-    this.initEnqueueBlock()
+    this.initStoreBlock()
     this.initBlockVerification()
     // TODO: this.initAssetVerification()
   }
@@ -104,7 +104,7 @@ export class Syncer extends EventEmitter {
     this._isRunning = false
     this.emit('stop')
 
-    clearInterval(this.enqueueBlockIntervalId!)
+    clearInterval(this.enqueueStoreBlockIntervalId!)
     clearInterval(this.blockVerificationIntervalId!)
   }
 
@@ -112,29 +112,28 @@ export class Syncer extends EventEmitter {
     if (payload.isSuccess === false) {
       this.logger.debug('storeBlockCompleteHandler !isSuccess triggered.')
       setTimeout(() => { // Re-queue the method when failed after an injected delay
-        this.enqueueBlock(payload.height, this.options.retryEnqueueBlockPriority!)
-      }, this.options.reQueueDelayMs!)
+        this.enqueueStoreBlock(payload.height, this.options.retryEnqueueBlockPriority!)
+      }, this.options.retryEnqueueDelayMs!)
     }
   }
 
   private validateOptionalParameters() {
-    // TODO: validate minHeight?: number,
-    // TODO: validate maxHeight?: number,
+    // TODO: minHeight: 1,
+    // TODO: maxHeight:  undefined,
     if (!this.options.blockRedundancy) {
       throw new Error('blockRedundancy parameter must be supplied.')
     } else if (this.options.blockRedundancy !== 1) {
       throw new Error('supplied blockRedundancy parameter is invalid. Currently only supports for value [1].')
     }
-    // TODO: validate startOnInit?: boolean,
-    // TODO: validate workerCount?: number,
-    // TODO: validate doEnqueueBlockIntervalMs?: number,
-    // TODO: validate verifyBlocksIntervalMs?: number,
-    // TODO: validate maxQueueLength?: number,
-    // TODO: validate reQueueDelayMs?: number,
-    // TODO: validate standardEnqueueBlockPriority?: number,
-    // TODO: validate retryEnqueueBlockPriority?: number,
-    // TODO: validate verifyEnqueueBlockPriority?: number,
-    // TODO: validate loggerOptions?: LoggerOptions,
+    // TODO: startOnInit: true,
+    // TODO: workerCount: 30,
+    // TODO: enqueueBlockIntervalMs: 2000,
+    // TODO: verifyBlocksIntervalMs: 1 * 60 * 1000,
+    // TODO: maxQueueLength: 10000,
+    // TODO: retryEnqueueDelayMs: 2000,
+    // TODO: standardEnqueueBlockPriority: 5,
+    // TODO: retryEnqueueBlockPriority: 3,
+    // TODO: missingEnqueueStoreBlockPriority: 1,
   }
 
   private getPriorityQueue(): any {
@@ -164,21 +163,21 @@ export class Syncer extends EventEmitter {
     }, this.options.workerCount!)
   }
 
-  private initEnqueueBlock() {
-    this.logger.debug('initEnqueueBlock triggered.')
+  private initStoreBlock() {
+    this.logger.debug('initStoreBlock triggered.')
     this.setBlockWritePointer()
       .then(() => {
-        this.enqueueBlockIntervalId = setInterval(() => { // Enqueue blocks for download
-          this.doEnqueueBlock()
-        }, this.options.doEnqueueBlockIntervalMs!)
+        this.enqueueStoreBlockIntervalId = setInterval(() => { // Enqueue blocks for download
+          this.doEnqueueStoreBlock()
+        }, this.options.enqueueBlockIntervalMs!)
       })
       .catch((err) => {
         this.logger.warn('storage.getBlockCount() failed. Error:', err.message)
       })
   }
 
-  private doEnqueueBlock() {
-    this.logger.debug('doEnqueueBlock triggered.')
+  private doEnqueueStoreBlock() {
+    this.logger.debug('doEnqueueStoreBlock triggered.')
 
     if (this.options.maxHeight && this.blockWritePointer >= this.options.maxHeight) {
       this.logger.info(`BlockWritePointer is greater or equal to designated maxHeight [${this.options.maxHeight}]. There will be no enqueue block beyond this point.`)
@@ -192,7 +191,7 @@ export class Syncer extends EventEmitter {
         && (this.blockWritePointer! < node.blockHeight!)
         && (this.queue.length() < this.options.maxQueueLength!)) {
         this.increaseBlockWritePointer()
-        this.enqueueBlock(this.blockWritePointer!, this.options.standardEnqueueBlockPriority!)
+        this.enqueueStoreBlock(this.blockWritePointer!, this.options.standardEnqueueBlockPriority!)
       }
     } else {
       this.logger.error('Unable to find a valid node.')
@@ -241,26 +240,25 @@ export class Syncer extends EventEmitter {
           all.push(i);
         }
         
-        const available: number[] = map(res, (item: any) => item._id)
-        this.logger.info('Blocks available count:', available.length)
-
-        const missing = difference(all, available)
-        this.logger.info('Blocks missing count:', missing.length)
+        const availableBlocks: number[] = map(res, (item: any) => item._id)
+        this.logger.info('Blocks available count:', availableBlocks.length)
 
         // Enqueue missing block heights
-        missing.forEach((height: number) => {
-          this.enqueueBlock(height, this.options.verifyEnqueueBlockPriority!)
+        const missingBlocks = difference(all, availableBlocks)
+        this.logger.info('Blocks missing count:', missingBlocks.length)
+        missingBlocks.forEach((height: number) => {
+          this.enqueueStoreBlock(height, this.options.missingEnqueueStoreBlockPriority!)
         })
 
         // Request pruning of excessive blocks
-        const excessive = map(filter(res, (item: any) => item.count > this.options.blockRedundancy!), (item: any) => item._id)
-        this.logger.info('Blocks excessive redundancy count:', excessive.length)
+        const excessiveBlocks = map(filter(res, (item: any) => item.count > this.options.blockRedundancy!), (item: any) => item._id)
+        this.logger.info('Blocks excessive redundancy count:', excessiveBlocks.length)
         // TODO
 
         // Enqueue for redundancy blocks
         if (this.options.blockRedundancy! > 1) {
-          let insufficient = map(filter(res, (item: any) => item.count < this.options.blockRedundancy!), (item: any) => item._id)
-          this.logger.info('Blocks insufficient redundancy count:', insufficient.length)
+          let insufficientBlocks = map(filter(res, (item: any) => item.count < this.options.blockRedundancy!), (item: any) => item._id)
+          this.logger.info('Blocks insufficient redundancy count:', insufficientBlocks.length)
           // TODO
         }
       })
@@ -274,9 +272,9 @@ export class Syncer extends EventEmitter {
   /**
    * @param priority Lower value, the higher its priority to be executed.
    */
-  private enqueueBlock(height: number, priority: number) {
-    this.logger.debug('enqueueBlock triggered. height:', height, 'priority:', priority)
-    this.emit('enqueueBlock:init', { height, priority })
+  private enqueueStoreBlock(height: number, priority: number) {
+    this.logger.debug('enqueueStoreBlock triggered. height:', height, 'priority:', priority)
+    this.emit('enqueueStoreBlock:init', { height, priority })
 
     // if the block height is above the current height, increment the write pointer.
     if (height > this.blockWritePointer) {
