@@ -28,6 +28,7 @@ export class MemoryStorage extends EventEmitter {
 
     // Associate optional properties
     this.options = merge({}, DEFAULT_OPTIONS, options)
+    this.validateOptionalParameters()
 
     // Bootstrapping
     this.logger = new Logger(MODULE_NAME, this.options.loggerOptions)
@@ -74,5 +75,9 @@ export class MemoryStorage extends EventEmitter {
   disconnect(): Promise<void> {
     this.logger.debug('disconnect triggered.')
     return Promise.resolve()
+  }
+
+  private validateOptionalParameters() {
+    // TODO
   }
 }
