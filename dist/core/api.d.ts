@@ -14,6 +14,7 @@ export declare class Api extends EventEmitter {
     private logger;
     constructor(mesh: Mesh, storage?: MemoryStorage | MongodbStorage, options?: ApiOptions);
     private storageInsertHandler;
+    private validateOptionalParameters;
     private storeBlockCount;
     private storeBlock;
     getBlockCount(): Promise<number>;

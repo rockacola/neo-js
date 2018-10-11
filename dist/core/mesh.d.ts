@@ -18,6 +18,7 @@ export declare class Mesh extends EventEmitter {
     isReady(): boolean;
     startBenchmark(): void;
     stopBenchmark(): void;
+    private validateOptionalParameters;
     private performBenchmark;
     private checkMeshReady;
     private setReady;

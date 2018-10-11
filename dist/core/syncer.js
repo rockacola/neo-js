@@ -8,15 +8,16 @@ const MODULE_NAME = 'Syncer';
 const DEFAULT_OPTIONS = {
     minHeight: 1,
     maxHeight: undefined,
+    blockRedundancy: 1,
     startOnInit: true,
     workerCount: 30,
-    doEnqueueBlockIntervalMs: 2000,
+    enqueueBlockIntervalMs: 2000,
     verifyBlocksIntervalMs: 1 * 60 * 1000,
     maxQueueLength: 10000,
-    reQueueDelayMs: 2000,
+    retryEnqueueDelayMs: 2000,
     standardEnqueueBlockPriority: 5,
     retryEnqueueBlockPriority: 3,
-    verifyEnqueueBlockPriority: 1,
+    missingEnqueueStoreBlockPriority: 1,
     loggerOptions: {},
 };
 class Syncer extends events_1.EventEmitter {
@@ -27,6 +28,7 @@ class Syncer extends events_1.EventEmitter {
         this.mesh = mesh;
         this.storage = storage;
         this.options = lodash_1.merge({}, DEFAULT_OPTIONS, options);
+        this.validateOptionalParameters();
         this.logger = new node_log_it_1.Logger(MODULE_NAME, this.options.loggerOptions);
         this.queue = this.getPriorityQueue();
         if (this.options.startOnInit) {
@@ -46,7 +48,7 @@ class Syncer extends events_1.EventEmitter {
         this.logger.info('Start syncer. minHeight:', this.options.minHeight, 'maxHeight:', this.options.maxHeight);
         this._isRunning = true;
         this.emit('start');
-        this.initEnqueueBlock();
+        this.initStoreBlock();
         this.initBlockVerification();
     }
     stop() {
@@ -57,15 +59,23 @@ class Syncer extends events_1.EventEmitter {
         this.logger.info('Stop syncer.');
         this._isRunning = false;
         this.emit('stop');
-        clearInterval(this.enqueueBlockIntervalId);
+        clearInterval(this.enqueueStoreBlockIntervalId);
         clearInterval(this.blockVerificationIntervalId);
     }
     storeBlockCompleteHandler(payload) {
         if (payload.isSuccess === false) {
             this.logger.debug('storeBlockCompleteHandler !isSuccess triggered.');
             setTimeout(() => {
-                this.enqueueBlock(payload.height, this.options.retryEnqueueBlockPriority);
-            }, this.options.reQueueDelayMs);
+                this.enqueueStoreBlock(payload.height, this.options.retryEnqueueBlockPriority);
+            }, this.options.retryEnqueueDelayMs);
+        }
+    }
+    validateOptionalParameters() {
+        if (!this.options.blockRedundancy) {
+            throw new Error('blockRedundancy parameter must be supplied.');
+        }
+        else if (this.options.blockRedundancy !== 1) {
+            throw new Error('supplied blockRedundancy parameter is invalid. Currently only supports for value [1].');
         }
     }
     getPriorityQueue() {
@@ -86,20 +96,20 @@ class Syncer extends events_1.EventEmitter {
             });
         }, this.options.workerCount);
     }
-    initEnqueueBlock() {
-        this.logger.debug('initEnqueueBlock triggered.');
+    initStoreBlock() {
+        this.logger.debug('initStoreBlock triggered.');
         this.setBlockWritePointer()
             .then(() => {
-            this.enqueueBlockIntervalId = setInterval(() => {
-                this.doEnqueueBlock();
-            }, this.options.doEnqueueBlockIntervalMs);
+            this.enqueueStoreBlockIntervalId = setInterval(() => {
+                this.doEnqueueStoreBlock();
+            }, this.options.enqueueBlockIntervalMs);
         })
             .catch((err) => {
             this.logger.warn('storage.getBlockCount() failed. Error:', err.message);
         });
     }
-    doEnqueueBlock() {
-        this.logger.debug('doEnqueueBlock triggered.');
+    doEnqueueStoreBlock() {
+        this.logger.debug('doEnqueueStoreBlock triggered.');
         if (this.options.maxHeight && this.blockWritePointer >= this.options.maxHeight) {
             this.logger.info(`BlockWritePointer is greater or equal to designated maxHeight [${this.options.maxHeight}]. There will be no enqueue block beyond this point.`);
             return;
@@ -110,7 +120,7 @@ class Syncer extends events_1.EventEmitter {
                 && (this.blockWritePointer < node.blockHeight)
                 && (this.queue.length() < this.options.maxQueueLength)) {
                 this.increaseBlockWritePointer();
-                this.enqueueBlock(this.blockWritePointer, this.options.standardEnqueueBlockPriority);
+                this.enqueueStoreBlock(this.blockWritePointer, this.options.standardEnqueueBlockPriority);
             }
         }
         else {
@@ -156,22 +166,28 @@ class Syncer extends events_1.EventEmitter {
             for (let i = startHeight; i <= endHeight; i++) {
                 all.push(i);
             }
-            const available = lodash_1.map(res, (item) => item._id);
-            this.logger.info('Blocks available count:', available.length);
-            const missing = lodash_1.difference(all, available);
-            this.logger.info('Blocks missing count:', missing.length);
-            missing.forEach((height) => {
-                this.enqueueBlock(height, this.options.verifyEnqueueBlockPriority);
+            const availableBlocks = lodash_1.map(res, (item) => item._id);
+            this.logger.info('Blocks available count:', availableBlocks.length);
+            const missingBlocks = lodash_1.difference(all, availableBlocks);
+            this.logger.info('Blocks missing count:', missingBlocks.length);
+            missingBlocks.forEach((height) => {
+                this.enqueueStoreBlock(height, this.options.missingEnqueueStoreBlockPriority);
             });
+            const excessiveBlocks = lodash_1.map(lodash_1.filter(res, (item) => item.count > this.options.blockRedundancy), (item) => item._id);
+            this.logger.info('Blocks excessive redundancy count:', excessiveBlocks.length);
+            if (this.options.blockRedundancy > 1) {
+                let insufficientBlocks = lodash_1.map(lodash_1.filter(res, (item) => item.count < this.options.blockRedundancy), (item) => item._id);
+                this.logger.info('Blocks insufficient redundancy count:', insufficientBlocks.length);
+            }
         });
     }
     increaseBlockWritePointer() {
         this.logger.debug('increaseBlockWritePointer triggered.');
         this.blockWritePointer += 1;
     }
-    enqueueBlock(height, priority) {
-        this.logger.debug('enqueueBlock triggered. height:', height, 'priority:', priority);
-        this.emit('enqueueBlock:init', { height, priority });
+    enqueueStoreBlock(height, priority) {
+        this.logger.debug('enqueueStoreBlock triggered. height:', height, 'priority:', priority);
+        this.emit('enqueueStoreBlock:init', { height, priority });
         if (height > this.blockWritePointer) {
             this.logger.debug('height > this.blockWritePointer, blockWritePointer is now:', height);
             this.blockWritePointer = height;

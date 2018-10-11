@@ -17,6 +17,7 @@ class Node extends events_1.EventEmitter {
         super();
         this.endpoint = endpoint;
         this.options = lodash_1.merge({}, DEFAULT_OPTIONS, options);
+        this.validateOptionalParameters();
         this.logger = new node_log_it_1.Logger(MODULE_NAME, this.options.loggerOptions);
         this.on('query:init', this.queryInitHandler.bind(this));
         this.on('query:success', this.querySuccessHandler.bind(this));
@@ -64,6 +65,8 @@ class Node extends events_1.EventEmitter {
     getVersion() {
         this.logger.debug('getVersion triggered.');
         return this.query(constants_1.default.rpc.getversion);
+    }
+    validateOptionalParameters() {
     }
     query(method, params = [], id = DEFAULT_ID) {
         this.logger.debug('query triggered. method:', method);

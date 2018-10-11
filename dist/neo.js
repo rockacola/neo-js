@@ -21,6 +21,7 @@ class Neo extends events_1.EventEmitter {
     constructor(options = {}) {
         super();
         this.options = lodash_1.merge({}, DEFAULT_OPTIONS, options);
+        this.validateOptionalParameters();
         this.logger = new node_log_it_1.Logger(MODULE_NAME, this.options.loggerOptions);
         this.mesh = this.getMesh();
         this.storage = this.getStorage();
@@ -36,6 +37,8 @@ class Neo extends events_1.EventEmitter {
     }
     get UserAgent() {
         return `neo-js:${this.VERSION}`;
+    }
+    validateOptionalParameters() {
     }
     getMesh() {
         this.logger.debug('getMesh triggered.');

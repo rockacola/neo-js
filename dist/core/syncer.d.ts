@@ -7,15 +7,16 @@ import { MongodbStorage } from '../storages/mongodb-storage';
 export interface SyncerOptions {
     minHeight?: number;
     maxHeight?: number;
+    blockRedundancy?: number;
     startOnInit?: boolean;
     workerCount?: number;
-    doEnqueueBlockIntervalMs?: number;
+    enqueueBlockIntervalMs?: number;
     verifyBlocksIntervalMs?: number;
     maxQueueLength?: number;
-    reQueueDelayMs?: number;
+    retryEnqueueDelayMs?: number;
     standardEnqueueBlockPriority?: number;
     retryEnqueueBlockPriority?: number;
-    verifyEnqueueBlockPriority?: number;
+    missingEnqueueStoreBlockPriority?: number;
     loggerOptions?: LoggerOptions;
 }
 export declare class Syncer extends EventEmitter {
@@ -26,20 +27,21 @@ export declare class Syncer extends EventEmitter {
     private storage?;
     private options;
     private logger;
-    private enqueueBlockIntervalId?;
+    private enqueueStoreBlockIntervalId?;
     private blockVerificationIntervalId?;
     constructor(mesh: Mesh, storage?: MemoryStorage | MongodbStorage, options?: SyncerOptions);
     isRunning(): boolean;
     start(): void;
     stop(): void;
     private storeBlockCompleteHandler;
+    private validateOptionalParameters;
     private getPriorityQueue;
-    private initEnqueueBlock;
-    private doEnqueueBlock;
+    private initStoreBlock;
+    private doEnqueueStoreBlock;
     private setBlockWritePointer;
     private initBlockVerification;
     private doBlockVerification;
     private increaseBlockWritePointer;
-    private enqueueBlock;
+    private enqueueStoreBlock;
     private storeBlock;
 }

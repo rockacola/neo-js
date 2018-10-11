@@ -18,4 +18,5 @@ export declare class MemoryStorage extends EventEmitter {
     setBlock(height: number, block: object, source: string): Promise<void>;
     analyzeBlocks(startHeight: number, endHeight: number): Promise<object[]>;
     disconnect(): Promise<void>;
+    private validateOptionalParameters;
 }

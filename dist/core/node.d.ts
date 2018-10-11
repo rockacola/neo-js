@@ -21,6 +21,7 @@ export declare class Node extends EventEmitter {
     getBlock(height: number, isVerbose?: boolean): Promise<object>;
     getBlockCount(): Promise<object>;
     getVersion(): Promise<object>;
+    private validateOptionalParameters;
     private query;
     private increasePendingRequest;
     private decreasePendingRequest;

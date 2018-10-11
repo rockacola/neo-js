@@ -19,6 +19,7 @@ class Mesh extends events_1.EventEmitter {
             throw new Error('Mesh must have 1 or more nodes.');
         }
         this.options = lodash_1.merge({}, DEFAULT_OPTIONS, options);
+        this.validateOptionalParameters();
         this.logger = new node_log_it_1.Logger(MODULE_NAME, this.options.loggerOptions);
         if (this.options.startBenchmarkOnInit) {
             this.startBenchmark();
@@ -45,6 +46,8 @@ class Mesh extends events_1.EventEmitter {
         if (this.benchmarkIntervalId) {
             clearInterval(this.benchmarkIntervalId);
         }
+    }
+    validateOptionalParameters() {
     }
     performBenchmark() {
         this.logger.debug('performBenchmark triggered.');

@@ -19,6 +19,7 @@ export declare class MongodbStorage extends EventEmitter {
     private logger;
     constructor(options?: MongodbStorageOptions);
     isReady(): boolean;
+    private validateOptionalParameters;
     private getBlockModel;
     private initConnection;
     private setReady;

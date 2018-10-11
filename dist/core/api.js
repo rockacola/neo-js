@@ -15,6 +15,7 @@ class Api extends events_1.EventEmitter {
         this.mesh = mesh;
         this.storage = storage;
         this.options = lodash_1.merge({}, DEFAULT_OPTIONS, options);
+        this.validateOptionalParameters();
         this.logger = new node_log_it_1.Logger(MODULE_NAME, this.options.loggerOptions);
         this.on('storage:insert', this.storageInsertHandler.bind(this));
         this.logger.debug('constructor completes.');
@@ -30,6 +31,8 @@ class Api extends events_1.EventEmitter {
         else {
             throw new Error('Not implemented.');
         }
+    }
+    validateOptionalParameters() {
     }
     storeBlockCount(payload) {
         if (this.storage) {

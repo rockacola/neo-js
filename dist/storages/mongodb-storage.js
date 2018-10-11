@@ -22,6 +22,7 @@ class MongodbStorage extends events_1.EventEmitter {
         super();
         this._isReady = false;
         this.options = lodash_1.merge({}, DEFAULT_OPTIONS, options);
+        this.validateOptionalParameters();
         this.logger = new node_log_it_1.Logger(MODULE_NAME, this.options.loggerOptions);
         this.blockModel = this.getBlockModel();
         this.initConnection();
@@ -29,6 +30,8 @@ class MongodbStorage extends events_1.EventEmitter {
     }
     isReady() {
         return this._isReady;
+    }
+    validateOptionalParameters() {
     }
     getBlockModel() {
         const schema = new mongoose_1.Schema({
@@ -99,6 +102,7 @@ class MongodbStorage extends events_1.EventEmitter {
         this.logger.debug('getBlock triggered. height:', height);
         return new Promise((resolve, reject) => {
             this.blockModel.findOne({ height })
+                .sort({ createdAt: -1 })
                 .exec((err, res) => {
                 if (err) {
                     this.logger.warn('blockModel.findOne() execution failed. error:', err.message);
