@@ -202,13 +202,15 @@ export class MongodbStorage extends EventEmitter {
         },
       ]
 
-      this.blockModel.aggregate(aggregatorOptions, (err: Error, res: any) => {
-        if (err) {
-          return reject(err)
-        }
+      this.blockModel.aggregate(aggregatorOptions)
+        .allowDiskUse(true)
+        .exec((err: Error, res: any) => {
+          if (err) {
+            return reject(err)
+          }
 
-        return resolve(res)
-      })
+          return resolve(res)
+        })
     })
   }
 
