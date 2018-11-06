@@ -13,6 +13,9 @@ const DEFAULT_OPTIONS: SyncerOptions = {
   maxHeight:  undefined,
   blockRedundancy: 1, // If value is greater than 1, than it'll keep multiple copies of same block as integrity measurement // TODO: to ensure redundant blocks are coming from unique sources
   startOnInit: true,
+  toSyncIncremental: true,
+  toSyncForMissingBlocks: true,
+  toPruneRedundantBlocks: false,
   workerCount: 30,
   enqueueBlockIntervalMs: 2000,
   verifyBlocksIntervalMs: 1 * 60 * 1000,
@@ -29,6 +32,9 @@ export interface SyncerOptions {
   maxHeight?: number,
   blockRedundancy?: number,
   startOnInit?: boolean,
+  toSyncIncremental?: boolean,
+  toSyncForMissingBlocks?: boolean,
+  toPruneRedundantBlocks?: boolean,
   workerCount?: number,
   enqueueBlockIntervalMs?: number,
   verifyBlocksIntervalMs?: number,
@@ -91,7 +97,6 @@ export class Syncer extends EventEmitter {
 
     this.initStoreBlock()
     this.initBlockVerification()
-    // TODO: this.initAssetVerification()
   }
 
   stop() {
@@ -118,22 +123,11 @@ export class Syncer extends EventEmitter {
   }
 
   private validateOptionalParameters() {
-    // TODO: minHeight: 1,
-    // TODO: maxHeight:  undefined,
     if (!this.options.blockRedundancy) {
       throw new Error('blockRedundancy parameter must be supplied.')
     } else if (this.options.blockRedundancy !== 1) {
       throw new Error('supplied blockRedundancy parameter is invalid. Currently only supports for value [1].')
     }
-    // TODO: startOnInit: true,
-    // TODO: workerCount: 30,
-    // TODO: enqueueBlockIntervalMs: 2000,
-    // TODO: verifyBlocksIntervalMs: 1 * 60 * 1000,
-    // TODO: maxQueueLength: 10000,
-    // TODO: retryEnqueueDelayMs: 2000,
-    // TODO: standardEnqueueBlockPriority: 5,
-    // TODO: retryEnqueueBlockPriority: 3,
-    // TODO: missingEnqueueStoreBlockPriority: 1,
   }
 
   private getPriorityQueue(): any {
@@ -167,9 +161,12 @@ export class Syncer extends EventEmitter {
     this.logger.debug('initStoreBlock triggered.')
     this.setBlockWritePointer()
       .then(() => {
-        this.enqueueStoreBlockIntervalId = setInterval(() => { // Enqueue blocks for download
-          this.doEnqueueStoreBlock()
-        }, this.options.enqueueBlockIntervalMs!)
+        if (this.options.toSyncIncremental) {
+          // Enqueue blocks for download periodically
+          this.enqueueStoreBlockIntervalId = setInterval(() => {
+            this.doEnqueueStoreBlock()
+          }, this.options.enqueueBlockIntervalMs!)
+        }
       })
       .catch((err) => {
         this.logger.warn('storage.getBlockCount() failed. Error:', err.message)
@@ -244,22 +241,28 @@ export class Syncer extends EventEmitter {
         this.logger.info('Blocks available count:', availableBlocks.length)
 
         // Enqueue missing block heights
-        const missingBlocks = difference(all, availableBlocks)
-        this.logger.info('Blocks missing count:', missingBlocks.length)
-        missingBlocks.forEach((height: number) => {
-          this.enqueueStoreBlock(height, this.options.missingEnqueueStoreBlockPriority!)
-        })
+        if (this.options.toSyncForMissingBlocks) {
+          const missingBlocks = difference(all, availableBlocks)
+          this.logger.info('Blocks missing count:', missingBlocks.length)
+          missingBlocks.forEach((height: number) => {
+            this.enqueueStoreBlock(height, this.options.missingEnqueueStoreBlockPriority!)
+          })
+        }
 
         // Request pruning of excessive blocks
-        const excessiveBlocks = map(filter(res, (item: any) => item.count > this.options.blockRedundancy!), (item: any) => item._id)
-        this.logger.info('Blocks excessive redundancy count:', excessiveBlocks.length)
-        // TODO
+        if (this.options.toPruneRedundantBlocks) {
+          const excessiveBlocks = map(filter(res, (item: any) => item.count > this.options.blockRedundancy!), (item: any) => item._id)
+          this.logger.info('Blocks excessive redundancy count:', excessiveBlocks.length)
+          // TODO
+          throw new Error('Not Implemented.')
+        }
 
         // Enqueue for redundancy blocks
         if (this.options.blockRedundancy! > 1) {
           let insufficientBlocks = map(filter(res, (item: any) => item.count < this.options.blockRedundancy!), (item: any) => item._id)
           this.logger.info('Blocks insufficient redundancy count:', insufficientBlocks.length)
           // TODO
+          throw new Error('Not Implemented.')
         }
       })
   }
