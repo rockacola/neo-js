@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+const _ = require('lodash')
 const Neo = require('../../dist/neo').Neo
 
 process.on('unhandledRejection', (reason, p) => {
@@ -16,7 +17,7 @@ const blockCollectionName = 'blocks'
 // -- Implementation
 
 ;(async () => {
-  console.log('== MongoDB Example ==')
+  console.log('== Block Redundancy Example ==')
   const neo = new Neo({
     network: network,
     storageType: 'mongodb',
@@ -43,8 +44,10 @@ const blockCollectionName = 'blocks'
 
   neo.storage.on('ready', async () => {
     console.log('=> neo.storage ready.')
-    const blocks = await neo.storage.getBlocks(517622)
-    console.log('=> Blocks of height 517622:', blocks)
+
+    const rpt = await neo.storage.analyzeBlocks(0, 1000000)
+    const redundantBlocks = _.filter(rpt, (item) => item.count >= 2)
+    console.log('=> redundantBlocks:', redundantBlocks)
 
     neo.close()
     console.log('=== THE END ===')

@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events'
 import { priorityQueue } from 'async'
 import { Logger, LoggerOptions } from 'node-log-it'
-import { merge, map, difference, filter } from 'lodash'
+import { merge, map, difference, filter, take } from 'lodash'
 import { Node } from './node'
 import { Mesh } from './mesh'
 import { MemoryStorage } from '../storages/memory-storage'
@@ -17,7 +17,7 @@ const DEFAULT_OPTIONS: SyncerOptions = {
   startOnInit: true,
   toSyncIncremental: true,
   toSyncForMissingBlocks: true,
-  toPruneRedundantBlocks: false,
+  toPruneRedundantBlocks: true,
   workerCount: 30,
   enqueueBlockIntervalMs: 2000,
   verifyBlocksIntervalMs: 1 * 60 * 1000,
@@ -25,7 +25,9 @@ const DEFAULT_OPTIONS: SyncerOptions = {
   retryEnqueueDelayMs: 2000,
   standardEnqueueBlockPriority: 5,
   retryEnqueueBlockPriority: 3,
-  missingEnqueueStoreBlockPriority: 1,
+  missingEnqueueStoreBlockPriority: 2,
+  enqueuePruneBlockPriority: 1,
+  maxPruneChunkSize: 1000,
   loggerOptions: {},
 }
 
@@ -45,6 +47,8 @@ export interface SyncerOptions {
   standardEnqueueBlockPriority?: number,
   retryEnqueueBlockPriority?: number,
   missingEnqueueStoreBlockPriority?: number,
+  enqueuePruneBlockPriority?: number,
+  maxPruneChunkSize?: number,
   loggerOptions?: LoggerOptions,
 }
 
@@ -268,8 +272,10 @@ export class Syncer extends EventEmitter {
         this.logger.info('Blocks excessive redundancy count:', excessiveBlocks.length)
         this.emit('blockVerification:excessiveBlocks', { count: excessiveBlocks.length })
         if (this.options.toPruneRedundantBlocks) {
-          // TODO
-          throw new Error('Not Implemented.')
+          const takenBlocks = take(excessiveBlocks, this.options.maxPruneChunkSize!)
+          takenBlocks.forEach((height: number) => {
+            this.enqueuePruneBlock(height, this.options.blockRedundancy!, this.options.enqueuePruneBlockPriority!)
+          })
         }
 
         // Enqueue for redundancy blocks
@@ -304,7 +310,7 @@ export class Syncer extends EventEmitter {
   /**
    * @param priority Lower value, the higher its priority to be executed.
    */
-  private enqueueStoreBlock(height: number, priority: number) {
+  private enqueueStoreBlock(height: number, priority: number): void {
     this.logger.debug('enqueueStoreBlock triggered. height:', height, 'priority:', priority)
     this.emit('enqueueStoreBlock:init', { height, priority })
 
@@ -323,7 +329,23 @@ export class Syncer extends EventEmitter {
     }, priority)
   }
 
-  private storeBlock(attrs: object) {
+  /**
+   * @param priority Lower value, the higher its priority to be executed.
+   */
+  private enqueuePruneBlock(height: number, redundancySize: number, priority: number): void {
+    this.logger.debug('enqueuePruneBlock triggered. height:', height, 'redundancySize:', redundancySize, 'priority:', priority)
+    this.emit('enqueuePruneBlock:init', { height, redundancySize, priority })
+
+    this.queue.push({
+      method: this.pruneBlock.bind(this),
+      attrs: {
+        height,
+        redundancySize,
+      },
+    }, priority)
+  }
+
+  private storeBlock(attrs: object): Promise<any> {
     this.logger.debug('storeBlock triggered. attrs:', attrs)
     const height: number = (<any> attrs).height
 
@@ -355,6 +377,18 @@ export class Syncer extends EventEmitter {
           this.emit('storeBlock:complete', { isSuccess: false, height })
           return reject(err)
         })
+    })
+  }
+
+  private pruneBlock(attrs: object): Promise<any> {
+    this.logger.debug('pruneBlock triggered. attrs:', attrs)
+    const height: number = (<any> attrs).height
+    const redundancySize: number = (<any> attrs).redundancySize
+
+    return new Promise((resolve, reject) => {
+      this.storage!.pruneBlock(height, redundancySize)
+        .then(() => resolve())
+        .catch((err: any) => reject(err))
     })
   }
 }

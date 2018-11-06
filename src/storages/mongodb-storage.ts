@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events'
 import { Logger, LoggerOptions } from 'node-log-it'
-import { merge } from 'lodash'
+import { merge, map, takeRight } from 'lodash'
 import { Mongoose, Schema } from 'mongoose'
 const mongoose = new Mongoose()
 mongoose.Promise = global.Promise // Explicitly supply promise library (http://mongoosejs.com/docs/promises.html)
@@ -134,6 +134,21 @@ export class MongodbStorage extends EventEmitter {
   getBlock(height: number): Promise<object> {
     this.logger.debug('getBlock triggered. height:', height)
 
+    return new Promise((resolve, reject) => {
+      this.getBlockDocument(height)
+        .then((doc: any) => {
+          if (!doc.payload) {
+            return reject(new Error('Invalid document result.'))
+          }
+          return resolve(doc.payload)
+        })
+        .catch((err) => reject(err))
+    })
+  }
+
+  private getBlockDocument(height: number): Promise<object> {
+    this.logger.debug('getBlockDocument triggered. height:', height)
+
     /**
      * NOTE:
      * It is assumed that there may be multiple matches and will pick 'latest created' one as truth.
@@ -146,10 +161,46 @@ export class MongodbStorage extends EventEmitter {
             this.logger.warn('blockModel.findOne() execution failed. error:', err.message)
             return reject(err)
           }
-          if (!res || !res.payload) {
+          if (!res) {
             return reject(new Error('No result found.'))
           }
           return resolve(res.payload)
+        })
+    })
+  }
+
+  getBlocks(height: number): Promise<object[]> {
+    this.logger.debug('getBlocks triggered. height:', height)
+
+    return new Promise((resolve, reject) => {
+      this.getBlockDocuments(height)
+        .then((docs: object[]) => {
+          if (docs.length === 0) {
+            return resolve([])
+          }
+          const result = map(docs, (item: any) => item.payload)
+          return resolve(result)
+        })
+        .catch((err: any) => reject(err))
+    })
+  }
+
+  private getBlockDocuments(height: number): Promise<object[]> {
+    this.logger.debug('getBlockDocuments triggered. height:', height)
+
+    return new Promise((resolve, reject) => {
+      this.blockModel.find({ height })
+        .sort({ createdAt: -1 })
+        .exec((err: any, res: any) => {
+          if (err) {
+            this.logger.warn('blockModel.find() execution failed. error:', err.message)
+            return reject(err)
+          }
+          if (!res) {
+            // TODO: Verify if res is array
+            return resolve([])
+          }
+          return resolve(res)
         })
     })
   }
@@ -171,6 +222,34 @@ export class MongodbStorage extends EventEmitter {
         }
         resolve()
       })
+    })
+  }
+
+  pruneBlock(height: number, redundancySize: number): Promise<void> {
+    this.logger.debug('pruneBlock triggered. height: ', height, 'redundancySize:', redundancySize)
+
+    return new Promise((resolve, reject) => {
+      this.getBlockDocuments(height)
+        .then((docs: object[]) => {
+          this.logger.debug('getBlockDocuments() succeed. docs.length:', docs.length)
+          if (docs.length > redundancySize) {
+            const takeCount = docs.length - redundancySize
+            const toPrune = takeRight(docs, takeCount)
+            toPrune.forEach((doc: any) => {
+              this.logger.debug('Removing document id:', doc._id)
+              this.blockModel.remove({ _id: doc._id })
+                .exec((err: any, res: any) => {
+                  if (err) {
+                    this.logger.debug('blockModel.remove() execution failed. error:', err.message)
+                  } else {
+                    this.logger.debug('blockModel.remove() execution succeed.')
+                  }
+                })
+            })
+          }
+          resolve()
+        })
+        .catch((err: any) => reject(err))
     })
   }
 

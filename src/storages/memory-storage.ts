@@ -68,6 +68,10 @@ export class MemoryStorage extends EventEmitter {
     return Promise.resolve()
   }
 
+  pruneBlock(height: number, redundancySize: number): Promise<void> {
+    throw new Error('Not implemented.')
+  }
+
   analyzeBlocks(startHeight: number, endHeight: number): Promise<object[]> {
     throw new Error('Not implemented.')
   }

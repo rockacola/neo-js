@@ -3,8 +3,8 @@
 const moment = require('moment')
 const Neo = require('../../dist/neo').Neo
 
-process.on('unhandledRejection', (reason, p) => {
-  console.warn('Unhandled Rejection at: Promise', p, 'reason:', reason)
+process.on('unhandledRejection', (reason, promise) => {
+  console.warn('Unhandled promise rejection. Reason:', reason)
 })
 
 // -- Parameters
@@ -42,10 +42,19 @@ const syncDurationMs = 15 * 60 * 1000
 
   // Fetch Info
   neo.mesh.on('ready', async () => {
-    const chainBlockCount = await neo.mesh.getHighestNode().getBlockCount()
-    console.log('Highest Block Count:', chainBlockCount)
-    const storageBlockCount = await neo.storage.getBlockCount()
-    console.log('Highest Count in Storage:', storageBlockCount)
+    try {
+      const chainBlockCount = await neo.mesh.getHighestNode().getBlockCount()
+      console.log('Highest Block Count:', chainBlockCount)
+    } catch (err) {
+      console.warn('neo.mesh.getHighestNode().getBlockCount() failed. Message:', err.message)
+    }
+
+    try {
+      const storageBlockCount = await neo.storage.getBlockCount()
+      console.log('Highest Count in Storage:', storageBlockCount)
+    } catch (err) {
+      console.warn('neo.storage.getBlockCount() failed. Message:', err.message)
+    }
   })
 
   // Live Report
@@ -71,7 +80,13 @@ const syncDurationMs = 15 * 60 * 1000
   })
   const reportIntervalId = setInterval(() => { // Generate report periodically
     if (report.success.length > 0) {
-      report.max = neo.mesh.getHighestNode().blockHeight
+      const node = neo.mesh.getHighestNode()
+      if (!node) {
+        console.warn('Problem with neo.mesh.getHighestNode().')
+        return
+      }
+
+      report.max = node.blockHeight
       const msElapsed = moment().diff(report.startDate)
       const successBlockCount = report.success.length
       const highestBlock = report.success[report.success.length - 1].height // This is an guesstimate
