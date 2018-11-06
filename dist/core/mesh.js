@@ -37,6 +37,9 @@ class Mesh extends events_1.EventEmitter {
             n.getBlockCount()
                 .then(() => {
                 this.checkMeshReady();
+            })
+                .catch((err) => {
+                this.logger.info('node.getBlockCount error, but to continue... Endpoint:', n.endpoint, 'Message:', err.message);
             });
         });
         this.benchmarkIntervalId = setInterval(() => this.performBenchmark(), this.options.benchmarkIntervalMs);

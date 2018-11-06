@@ -10,6 +10,9 @@ const DEFAULT_OPTIONS = {
     maxHeight: undefined,
     blockRedundancy: 1,
     startOnInit: true,
+    toSyncIncremental: true,
+    toSyncForMissingBlocks: true,
+    toPruneRedundantBlocks: true,
     workerCount: 30,
     enqueueBlockIntervalMs: 2000,
     verifyBlocksIntervalMs: 1 * 60 * 1000,
@@ -17,7 +20,9 @@ const DEFAULT_OPTIONS = {
     retryEnqueueDelayMs: 2000,
     standardEnqueueBlockPriority: 5,
     retryEnqueueBlockPriority: 3,
-    missingEnqueueStoreBlockPriority: 1,
+    missingEnqueueStoreBlockPriority: 2,
+    enqueuePruneBlockPriority: 1,
+    maxPruneChunkSize: 1000,
     loggerOptions: {},
 };
 class Syncer extends events_1.EventEmitter {
@@ -87,12 +92,12 @@ class Syncer extends events_1.EventEmitter {
                 .then(() => {
                 callback();
                 this.logger.debug('queued method run completed.');
-                this.emit('syncer:run:complete', { isSuccess: true, task });
+                this.emit('sync:complete', { isSuccess: true, task });
             })
                 .catch((err) => {
                 this.logger.info('Task execution error, but to continue... attrs:', attrs);
                 callback();
-                this.emit('syncer:run:complete', { isSuccess: false, task });
+                this.emit('sync:complete', { isSuccess: false, task });
             });
         }, this.options.workerCount);
     }
@@ -100,9 +105,11 @@ class Syncer extends events_1.EventEmitter {
         this.logger.debug('initStoreBlock triggered.');
         this.setBlockWritePointer()
             .then(() => {
-            this.enqueueStoreBlockIntervalId = setInterval(() => {
-                this.doEnqueueStoreBlock();
-            }, this.options.enqueueBlockIntervalMs);
+            if (this.options.toSyncIncremental) {
+                this.enqueueStoreBlockIntervalId = setInterval(() => {
+                    this.doEnqueueStoreBlock();
+                }, this.options.enqueueBlockIntervalMs);
+            }
         })
             .catch((err) => {
             this.logger.warn('storage.getBlockCount() failed. Error:', err.message);
@@ -110,15 +117,13 @@ class Syncer extends events_1.EventEmitter {
     }
     doEnqueueStoreBlock() {
         this.logger.debug('doEnqueueStoreBlock triggered.');
-        if (this.options.maxHeight && this.blockWritePointer >= this.options.maxHeight) {
+        if (this.isReachedMaxHeight()) {
             this.logger.info(`BlockWritePointer is greater or equal to designated maxHeight [${this.options.maxHeight}]. There will be no enqueue block beyond this point.`);
             return;
         }
         const node = this.mesh.getHighestNode();
         if (node) {
-            while ((!this.options.maxHeight || this.blockWritePointer < this.options.maxHeight)
-                && (this.blockWritePointer < node.blockHeight)
-                && (this.queue.length() < this.options.maxQueueLength)) {
+            while (!this.isReachedMaxHeight() && !this.isReachedHighestBlock(node) && !this.isReachedMaxQueueLength()) {
                 this.increaseBlockWritePointer();
                 this.enqueueStoreBlock(this.blockWritePointer, this.options.standardEnqueueBlockPriority);
             }
@@ -126,6 +131,15 @@ class Syncer extends events_1.EventEmitter {
         else {
             this.logger.error('Unable to find a valid node.');
         }
+    }
+    isReachedMaxHeight() {
+        return !!(this.options.maxHeight && this.blockWritePointer >= this.options.maxHeight);
+    }
+    isReachedHighestBlock(node) {
+        return (this.blockWritePointer >= node.blockHeight);
+    }
+    isReachedMaxQueueLength() {
+        return (this.queue.length() >= this.options.maxQueueLength);
     }
     setBlockWritePointer() {
         this.logger.debug('setBlockWritePointer triggered.');
@@ -158,6 +172,7 @@ class Syncer extends events_1.EventEmitter {
     }
     doBlockVerification() {
         this.logger.debug('doBlockVerification triggered.');
+        this.emit('blockVerification:init');
         const startHeight = this.options.minHeight;
         const endHeight = (this.options.maxHeight && this.blockWritePointer > this.options.maxHeight) ? this.options.maxHeight : this.blockWritePointer;
         this.storage.analyzeBlocks(startHeight, endHeight)
@@ -170,15 +185,38 @@ class Syncer extends events_1.EventEmitter {
             this.logger.info('Blocks available count:', availableBlocks.length);
             const missingBlocks = lodash_1.difference(all, availableBlocks);
             this.logger.info('Blocks missing count:', missingBlocks.length);
-            missingBlocks.forEach((height) => {
-                this.enqueueStoreBlock(height, this.options.missingEnqueueStoreBlockPriority);
-            });
+            this.emit('blockVerification:missingBlocks', { count: missingBlocks.length });
+            if (this.options.toSyncForMissingBlocks) {
+                missingBlocks.forEach((height) => {
+                    this.enqueueStoreBlock(height, this.options.missingEnqueueStoreBlockPriority);
+                });
+            }
             const excessiveBlocks = lodash_1.map(lodash_1.filter(res, (item) => item.count > this.options.blockRedundancy), (item) => item._id);
             this.logger.info('Blocks excessive redundancy count:', excessiveBlocks.length);
+            this.emit('blockVerification:excessiveBlocks', { count: excessiveBlocks.length });
+            if (this.options.toPruneRedundantBlocks) {
+                const takenBlocks = lodash_1.take(excessiveBlocks, this.options.maxPruneChunkSize);
+                takenBlocks.forEach((height) => {
+                    this.enqueuePruneBlock(height, this.options.blockRedundancy, this.options.enqueuePruneBlockPriority);
+                });
+            }
             if (this.options.blockRedundancy > 1) {
                 let insufficientBlocks = lodash_1.map(lodash_1.filter(res, (item) => item.count < this.options.blockRedundancy), (item) => item._id);
                 this.logger.info('Blocks insufficient redundancy count:', insufficientBlocks.length);
+                throw new Error('Not Implemented.');
             }
+            const node = this.mesh.getHighestNode();
+            if (node) {
+                if (this.isReachedMaxHeight() || this.isReachedHighestBlock(node)) {
+                    if (missingBlocks.length === 0) {
+                        this.logger.info('Storage is fully synced and up to date.');
+                        this.emit('UpToDate');
+                    }
+                }
+            }
+        })
+            .catch((err) => {
+            this.logger.info('storage.analyzeBlocks error, but to continue... Message:', err.message);
         });
     }
     increaseBlockWritePointer() {
@@ -196,6 +234,17 @@ class Syncer extends events_1.EventEmitter {
             method: this.storeBlock.bind(this),
             attrs: {
                 height,
+            },
+        }, priority);
+    }
+    enqueuePruneBlock(height, redundancySize, priority) {
+        this.logger.debug('enqueuePruneBlock triggered. height:', height, 'redundancySize:', redundancySize, 'priority:', priority);
+        this.emit('enqueuePruneBlock:init', { height, redundancySize, priority });
+        this.queue.push({
+            method: this.pruneBlock.bind(this),
+            attrs: {
+                height,
+                redundancySize,
             },
         }, priority);
     }
@@ -229,6 +278,16 @@ class Syncer extends events_1.EventEmitter {
                 this.emit('storeBlock:complete', { isSuccess: false, height });
                 return reject(err);
             });
+        });
+    }
+    pruneBlock(attrs) {
+        this.logger.debug('pruneBlock triggered. attrs:', attrs);
+        const height = attrs.height;
+        const redundancySize = attrs.redundancySize;
+        return new Promise((resolve, reject) => {
+            this.storage.pruneBlock(height, redundancySize)
+                .then(() => resolve())
+                .catch((err) => reject(err));
         });
     }
 }

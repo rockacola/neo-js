@@ -9,6 +9,9 @@ export interface SyncerOptions {
     maxHeight?: number;
     blockRedundancy?: number;
     startOnInit?: boolean;
+    toSyncIncremental?: boolean;
+    toSyncForMissingBlocks?: boolean;
+    toPruneRedundantBlocks?: boolean;
     workerCount?: number;
     enqueueBlockIntervalMs?: number;
     verifyBlocksIntervalMs?: number;
@@ -17,6 +20,8 @@ export interface SyncerOptions {
     standardEnqueueBlockPriority?: number;
     retryEnqueueBlockPriority?: number;
     missingEnqueueStoreBlockPriority?: number;
+    enqueuePruneBlockPriority?: number;
+    maxPruneChunkSize?: number;
     loggerOptions?: LoggerOptions;
 }
 export declare class Syncer extends EventEmitter {
@@ -38,10 +43,15 @@ export declare class Syncer extends EventEmitter {
     private getPriorityQueue;
     private initStoreBlock;
     private doEnqueueStoreBlock;
+    private isReachedMaxHeight;
+    private isReachedHighestBlock;
+    private isReachedMaxQueueLength;
     private setBlockWritePointer;
     private initBlockVerification;
     private doBlockVerification;
     private increaseBlockWritePointer;
     private enqueueStoreBlock;
+    private enqueuePruneBlock;
     private storeBlock;
+    private pruneBlock;
 }

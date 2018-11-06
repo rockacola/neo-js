@@ -46,6 +46,9 @@ class MemoryStorage extends events_1.EventEmitter {
         this.blockCollection.push({ height, block });
         return Promise.resolve();
     }
+    pruneBlock(height, redundancySize) {
+        throw new Error('Not implemented.');
+    }
     analyzeBlocks(startHeight, endHeight) {
         throw new Error('Not implemented.');
     }
