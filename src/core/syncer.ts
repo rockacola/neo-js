@@ -150,7 +150,7 @@ export class Syncer extends EventEmitter {
           this.logger.debug('queued method run completed.')
           this.emit('sync:complete', { isSuccess: true, task })
         })
-        .catch((err: Error) => {
+        .catch((err: any) => {
           this.logger.info('Task execution error, but to continue... attrs:', attrs)
           // this.logger.info('Error:', err)
           callback()
@@ -170,7 +170,7 @@ export class Syncer extends EventEmitter {
           }, this.options.enqueueBlockIntervalMs!)
         }
       })
-      .catch((err) => {
+      .catch((err: any) => {
         this.logger.warn('storage.getBlockCount() failed. Error:', err.message)
       })
   }
@@ -221,7 +221,7 @@ export class Syncer extends EventEmitter {
           }
           resolve()
         })
-        .catch((err) => {
+        .catch((err: any) => {
           this.logger.warn('storage.getBlockCount() failed. Error:', err.message)
           this.logger.info('Assumed that there are no blocks.')
           this.blockWritePointer = this.options.minHeight!
@@ -291,6 +291,9 @@ export class Syncer extends EventEmitter {
           }
         }
       })
+      .catch((err: any) => {
+        this.logger.info('storage.analyzeBlocks error, but to continue... Message:', err.message)
+      })
   }
 
   private increaseBlockWritePointer() {
@@ -341,13 +344,13 @@ export class Syncer extends EventEmitter {
               this.emit('storeBlock:complete', { isSuccess: true, height })
               return resolve()
             })
-            .catch((err) => {
+            .catch((err: any) => {
               this.logger.debug('setBlock failed. For height:', height)
               this.emit('storeBlock:complete', { isSuccess: false, height })
               return reject(err)
             })
         })
-        .catch((err) => {
+        .catch((err: any) => {
           this.logger.debug('getBlock failed. For height:', height)
           this.emit('storeBlock:complete', { isSuccess: false, height })
           return reject(err)

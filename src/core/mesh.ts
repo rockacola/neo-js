@@ -62,6 +62,9 @@ export class Mesh extends EventEmitter {
         .then(() => {
           this.checkMeshReady()
         })
+        .catch((err: any) => {
+          this.logger.info('node.getBlockCount error, but to continue... Endpoint:', n.endpoint, 'Message:', err.message)
+        })
     })
 
     // Start timer
