@@ -2,9 +2,11 @@ import { EventEmitter } from 'events'
 import { priorityQueue } from 'async'
 import { Logger, LoggerOptions } from 'node-log-it'
 import { merge, map, difference, filter } from 'lodash'
+import { Node } from './node'
 import { Mesh } from './mesh'
 import { MemoryStorage } from '../storages/memory-storage'
 import { MongodbStorage } from '../storages/mongodb-storage'
+
 // import C from '../common/constants'
 
 const MODULE_NAME = 'Syncer'
@@ -176,7 +178,7 @@ export class Syncer extends EventEmitter {
   private doEnqueueStoreBlock() {
     this.logger.debug('doEnqueueStoreBlock triggered.')
 
-    if (this.options.maxHeight && this.blockWritePointer >= this.options.maxHeight) {
+    if (this.isReachedMaxHeight()) {
       this.logger.info(`BlockWritePointer is greater or equal to designated maxHeight [${this.options.maxHeight}]. There will be no enqueue block beyond this point.`)
       return
     }
@@ -184,15 +186,25 @@ export class Syncer extends EventEmitter {
     const node = this.mesh.getHighestNode()
     if (node) { // TODO: better way to validate a node
       // TODO: undefined param handler
-      while ((!this.options.maxHeight || this.blockWritePointer < this.options.maxHeight)
-        && (this.blockWritePointer! < node.blockHeight!)
-        && (this.queue.length() < this.options.maxQueueLength!)) {
+      while (!this.isReachedMaxHeight() && !this.isReachedHighestBlock(node) && !this.isReachedMaxQueueLength()) {
         this.increaseBlockWritePointer()
         this.enqueueStoreBlock(this.blockWritePointer!, this.options.standardEnqueueBlockPriority!)
       }
     } else {
       this.logger.error('Unable to find a valid node.')
     }
+  }
+
+  private isReachedMaxHeight(): boolean {
+    return !!(this.options.maxHeight && this.blockWritePointer >= this.options.maxHeight)
+  }
+
+  private isReachedHighestBlock(node: Node): boolean {
+    return (this.blockWritePointer! >= node.blockHeight!)
+  }
+
+  private isReachedMaxQueueLength(): boolean {
+    return (this.queue.length() >= this.options.maxQueueLength!)
   }
 
   private setBlockWritePointer(): Promise<void> {
@@ -242,20 +254,20 @@ export class Syncer extends EventEmitter {
         this.logger.info('Blocks available count:', availableBlocks.length)
 
         // Enqueue missing block heights
+        const missingBlocks = difference(all, availableBlocks)
+        this.logger.info('Blocks missing count:', missingBlocks.length)
+        this.emit('blockVerification:missingBlocks', { count: missingBlocks.length })
         if (this.options.toSyncForMissingBlocks) {
-          const missingBlocks = difference(all, availableBlocks)
-          this.logger.info('Blocks missing count:', missingBlocks.length)
-          this.emit('blockVerification:missingBlocks', { count: missingBlocks.length })
           missingBlocks.forEach((height: number) => {
             this.enqueueStoreBlock(height, this.options.missingEnqueueStoreBlockPriority!)
           })
         }
 
         // Request pruning of excessive blocks
+        const excessiveBlocks = map(filter(res, (item: any) => item.count > this.options.blockRedundancy!), (item: any) => item._id)
+        this.logger.info('Blocks excessive redundancy count:', excessiveBlocks.length)
+        this.emit('blockVerification:excessiveBlocks', { count: excessiveBlocks.length })
         if (this.options.toPruneRedundantBlocks) {
-          const excessiveBlocks = map(filter(res, (item: any) => item.count > this.options.blockRedundancy!), (item: any) => item._id)
-          this.logger.info('Blocks excessive redundancy count:', excessiveBlocks.length)
-          this.emit('blockVerification:excessiveBlocks', { count: excessiveBlocks.length })
           // TODO
           throw new Error('Not Implemented.')
         }
@@ -266,6 +278,17 @@ export class Syncer extends EventEmitter {
           this.logger.info('Blocks insufficient redundancy count:', insufficientBlocks.length)
           // TODO
           throw new Error('Not Implemented.')
+        }
+
+        // Check if fully sync'ed
+        const node = this.mesh.getHighestNode()
+        if (node) {
+          if (this.isReachedMaxHeight() || this.isReachedHighestBlock(node)) {
+            if (missingBlocks.length === 0) {
+              this.logger.info('Storage is fully synced and up to date.')
+              this.emit('UpToDate')
+            }
+          }
         }
       })
   }
