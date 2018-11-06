@@ -146,13 +146,13 @@ export class Syncer extends EventEmitter {
         .then(() => {
           callback()
           this.logger.debug('queued method run completed.')
-          this.emit('syncer:run:complete', { isSuccess: true, task })
+          this.emit('sync:complete', { isSuccess: true, task })
         })
         .catch((err: Error) => {
           this.logger.info('Task execution error, but to continue... attrs:', attrs)
           // this.logger.info('Error:', err)
           callback()
-          this.emit('syncer:run:complete', { isSuccess: false, task })
+          this.emit('sync:complete', { isSuccess: false, task })
         })
     }, this.options.workerCount!)
   }
@@ -227,6 +227,7 @@ export class Syncer extends EventEmitter {
 
   private doBlockVerification() {
     this.logger.debug('doBlockVerification triggered.')
+    this.emit('blockVerification:init')
     const startHeight = this.options.minHeight!
     const endHeight = (this.options.maxHeight && this.blockWritePointer > this.options.maxHeight) ? this.options.maxHeight : this.blockWritePointer
 
@@ -244,6 +245,7 @@ export class Syncer extends EventEmitter {
         if (this.options.toSyncForMissingBlocks) {
           const missingBlocks = difference(all, availableBlocks)
           this.logger.info('Blocks missing count:', missingBlocks.length)
+          this.emit('blockVerification:missingBlocks', { count: missingBlocks.length })
           missingBlocks.forEach((height: number) => {
             this.enqueueStoreBlock(height, this.options.missingEnqueueStoreBlockPriority!)
           })
@@ -253,6 +255,7 @@ export class Syncer extends EventEmitter {
         if (this.options.toPruneRedundantBlocks) {
           const excessiveBlocks = map(filter(res, (item: any) => item.count > this.options.blockRedundancy!), (item: any) => item._id)
           this.logger.info('Blocks excessive redundancy count:', excessiveBlocks.length)
+          this.emit('blockVerification:excessiveBlocks', { count: excessiveBlocks.length })
           // TODO
           throw new Error('Not Implemented.')
         }
