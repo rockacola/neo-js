@@ -8,12 +8,14 @@
     "mocha": "mocha",
     "tsc": "tsc",
     "tslint": "tslint",
+    "prettier": "prettier",
     "dev": "tsc --watch",
     "clean": "rm -rf ./dist",
     "build": "npm run clean && tsc",
     "rebuild": "rm -rf ./node_modules && npm install && npm run build",
     "rebuild:hard": "rm -f ./package-lock.json && npm run rebuild",
     "lint": "tslint -c tslint.json './src/**/*.ts'",
+    "format": "prettier --write './src/**/*.ts'",
     "test": "mocha --reporter spec"
   },
   "repository": {
@@ -35,6 +37,7 @@
     "@types/node": "^10.7.1",
     "chai": "^4.1.2",
     "mocha": "^5.2.0",
+    "prettier": "^1.15.1",
     "tslint": "^5.11.0",
     "tslint-config-prettier": "^1.15.0",
     "typescript": "^3.1.1"
