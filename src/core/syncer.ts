@@ -312,7 +312,7 @@ export class Syncer extends EventEmitter {
   /**
    * @param priority Lower value, the higher its priority to be executed.
    */
-  private enqueueStoreBlock(height: number, priority: number): void {
+  private enqueueStoreBlock(height: number, priority: number) {
     this.logger.debug('enqueueStoreBlock triggered. height:', height, 'priority:', priority)
     this.emit('enqueueStoreBlock:init', { height, priority })
 
@@ -337,7 +337,7 @@ export class Syncer extends EventEmitter {
   /**
    * @param priority Lower value, the higher its priority to be executed.
    */
-  private enqueuePruneBlock(height: number, redundancySize: number, priority: number): void {
+  private enqueuePruneBlock(height: number, redundancySize: number, priority: number) {
     this.logger.debug('enqueuePruneBlock triggered. height:', height, 'redundancySize:', redundancySize, 'priority:', priority)
     this.emit('enqueuePruneBlock:init', { height, redundancySize, priority })
 
