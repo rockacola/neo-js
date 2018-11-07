@@ -136,7 +136,9 @@ export class Mesh extends EventEmitter {
     // pick and ping a random node
     const node = this.getRandomNode()
     if (node) {
-      node.getBlockCount()
+      node.getBlockCount().catch((err) => {
+        this.logger.info('node.getBlockCount error in performBenchmark(). Endpoint:', node.endpoint, 'Message:', err.message)
+      })
     }
   }
 
