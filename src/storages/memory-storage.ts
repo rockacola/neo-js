@@ -8,12 +8,12 @@ const DEFAULT_OPTIONS: MemoryStorageOptions = {
 }
 
 export interface MemoryStorageOptions {
-  loggerOptions?: LoggerOptions,
+  loggerOptions?: LoggerOptions
 }
 
 interface BlockItem {
-  height: number,
-  block: object,
+  height: number
+  block: object
 }
 
 export class MemoryStorage extends EventEmitter {

@@ -13,8 +13,8 @@ const DEFAULT_OPTIONS: NodeOptions = {
 }
 
 export interface NodeOptions {
-  toBenchmark?: boolean,
-  loggerOptions?: LoggerOptions,
+  toBenchmark?: boolean
+  loggerOptions?: LoggerOptions
 }
 
 export class Node extends EventEmitter {
@@ -81,11 +81,11 @@ export class Node extends EventEmitter {
       this.decreasePendingRequest()
       this.lastSeenTimestamp = Date.now()
       this.isActive = true
-      if ((<any> payload).latency) {
-        this.latency = (<any> payload).latency
+      if ((<any>payload).latency) {
+        this.latency = (<any>payload).latency
       }
-      if ((<any> payload).blockHeight) {
-        this.blockHeight = (<any> payload).blockHeight
+      if ((<any>payload).blockHeight) {
+        this.blockHeight = (<any>payload).blockHeight
       }
     }
   }
@@ -111,8 +111,8 @@ export class Node extends EventEmitter {
       RpcDelegate.query(this.endpoint, method, params, id)
         .then((res) => {
           const latency = Date.now() - t0
-          const result = (<any> res).result
-          const blockHeight = (method === C.rpc.getblockcount) ? result : undefined
+          const result = (<any>res).result
+          const blockHeight = method === C.rpc.getblockcount ? result : undefined
           this.emit('query:success', { method, latency, blockHeight })
           return resolve(result)
         })

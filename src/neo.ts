@@ -18,15 +18,15 @@ const DEFAULT_OPTIONS: NeoOptions = {
 }
 
 export interface NeoOptions {
-  network?: string,
-  storageType?: string,
-  endpoints?: object[],
-  nodeOptions?: NodeOptions,
-  meshOptions?: MeshOptions,
-  storageOptions?: MemoryStorageOptions | MongodbStorageOptions,
-  apiOptions?: ApiOptions,
-  syncerOptions?: SyncerOptions,
-  loggerOptions?: LoggerOptions,
+  network?: string
+  storageType?: string
+  endpoints?: object[]
+  nodeOptions?: NodeOptions
+  meshOptions?: MeshOptions
+  storageOptions?: MemoryStorageOptions | MongodbStorageOptions
+  apiOptions?: ApiOptions
+  syncerOptions?: SyncerOptions
+  loggerOptions?: LoggerOptions
 }
 
 export class Neo extends EventEmitter {
@@ -92,7 +92,8 @@ export class Neo extends EventEmitter {
 
   private getStorage(): MemoryStorage | MongodbStorage | undefined {
     this.logger.debug('getStorage triggered.')
-    if (!this.options.storageType) { // No storage
+    if (!this.options.storageType) {
+      // No storage
       return undefined
     } else if (this.options.storageType === C.storage.memory) {
       return new MemoryStorage(this.options.storageOptions)
@@ -132,7 +133,7 @@ export class Neo extends EventEmitter {
     // Instantiate nodes
     const nodes: Node[] = []
     endpoints.forEach((item) => {
-      const node = new Node((<any> item).endpoint, this.options.nodeOptions)
+      const node = new Node((<any>item).endpoint, this.options.nodeOptions)
       nodes.push(node)
     })
 

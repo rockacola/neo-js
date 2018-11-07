@@ -12,7 +12,7 @@ import { MongodbStorage } from '../storages/mongodb-storage'
 const MODULE_NAME = 'Syncer'
 const DEFAULT_OPTIONS: SyncerOptions = {
   minHeight: 1,
-  maxHeight:  undefined,
+  maxHeight: undefined,
   blockRedundancy: 1, // If value is greater than 1, than it'll keep multiple copies of same block as integrity measurement // TODO: to ensure redundant blocks are coming from unique sources
   startOnInit: true,
   toSyncIncremental: true,
@@ -32,24 +32,24 @@ const DEFAULT_OPTIONS: SyncerOptions = {
 }
 
 export interface SyncerOptions {
-  minHeight?: number,
-  maxHeight?: number,
-  blockRedundancy?: number,
-  startOnInit?: boolean,
-  toSyncIncremental?: boolean,
-  toSyncForMissingBlocks?: boolean,
-  toPruneRedundantBlocks?: boolean,
-  workerCount?: number,
-  enqueueBlockIntervalMs?: number,
-  verifyBlocksIntervalMs?: number,
-  maxQueueLength?: number,
-  retryEnqueueDelayMs?: number,
-  standardEnqueueBlockPriority?: number,
-  retryEnqueueBlockPriority?: number,
-  missingEnqueueStoreBlockPriority?: number,
-  enqueuePruneBlockPriority?: number,
-  maxPruneChunkSize?: number,
-  loggerOptions?: LoggerOptions,
+  minHeight?: number
+  maxHeight?: number
+  blockRedundancy?: number
+  startOnInit?: boolean
+  toSyncIncremental?: boolean
+  toSyncForMissingBlocks?: boolean
+  toPruneRedundantBlocks?: boolean
+  workerCount?: number
+  enqueueBlockIntervalMs?: number
+  verifyBlocksIntervalMs?: number
+  maxQueueLength?: number
+  retryEnqueueDelayMs?: number
+  standardEnqueueBlockPriority?: number
+  retryEnqueueBlockPriority?: number
+  missingEnqueueStoreBlockPriority?: number
+  enqueuePruneBlockPriority?: number
+  maxPruneChunkSize?: number
+  loggerOptions?: LoggerOptions
 }
 
 export class Syncer extends EventEmitter {
@@ -122,7 +122,8 @@ export class Syncer extends EventEmitter {
   private storeBlockCompleteHandler(payload: any) {
     if (payload.isSuccess === false) {
       this.logger.debug('storeBlockCompleteHandler !isSuccess triggered.')
-      setTimeout(() => { // Re-queue the method when failed after an injected delay
+      setTimeout(() => {
+        // Re-queue the method when failed after an injected delay
         this.enqueueStoreBlock(payload.height, this.options.retryEnqueueBlockPriority!)
       }, this.options.retryEnqueueDelayMs!)
     }
@@ -144,8 +145,8 @@ export class Syncer extends EventEmitter {
      * @param {function} callback
      */
     return priorityQueue((task: object, callback: () => void) => {
-      const method: (attrs: object) => Promise<any> = (<any> task).method
-      const attrs: object = (<any> task).attrs
+      const method: (attrs: object) => Promise<any> = (<any>task).method
+      const attrs: object = (<any>task).attrs
       this.logger.debug('new worker for queue.')
 
       method(attrs)
@@ -188,7 +189,8 @@ export class Syncer extends EventEmitter {
     }
 
     const node = this.mesh.getHighestNode()
-    if (node) { // TODO: better way to validate a node
+    if (node) {
+      // TODO: better way to validate a node
       // TODO: undefined param handler
       while (!this.isReachedMaxHeight() && !this.isReachedHighestBlock(node) && !this.isReachedMaxQueueLength()) {
         this.increaseBlockWritePointer()
@@ -204,11 +206,11 @@ export class Syncer extends EventEmitter {
   }
 
   private isReachedHighestBlock(node: Node): boolean {
-    return (this.blockWritePointer! >= node.blockHeight!)
+    return this.blockWritePointer! >= node.blockHeight!
   }
 
   private isReachedMaxQueueLength(): boolean {
-    return (this.queue.length() >= this.options.maxQueueLength!)
+    return this.queue.length() >= this.options.maxQueueLength!
   }
 
   private setBlockWritePointer(): Promise<void> {
@@ -237,7 +239,7 @@ export class Syncer extends EventEmitter {
   private initBlockVerification() {
     this.logger.debug('initEnqueueBlock triggered.')
     this.blockVerificationIntervalId = setInterval(() => {
-        this.doBlockVerification()
+      this.doBlockVerification()
     }, this.options.verifyBlocksIntervalMs!)
   }
 
@@ -245,15 +247,15 @@ export class Syncer extends EventEmitter {
     this.logger.debug('doBlockVerification triggered.')
     this.emit('blockVerification:init')
     const startHeight = this.options.minHeight!
-    const endHeight = (this.options.maxHeight && this.blockWritePointer > this.options.maxHeight) ? this.options.maxHeight : this.blockWritePointer
+    const endHeight = this.options.maxHeight && this.blockWritePointer > this.options.maxHeight ? this.options.maxHeight : this.blockWritePointer
 
     this.storage!.analyzeBlocks(startHeight, endHeight)
       .then((res: object[]) => {
         const all: number[] = []
         for (let i = startHeight; i <= endHeight; i++) {
-          all.push(i);
+          all.push(i)
         }
-        
+
         const availableBlocks: number[] = map(res, (item: any) => item._id)
         this.logger.info('Blocks available count:', availableBlocks.length)
 
@@ -321,12 +323,15 @@ export class Syncer extends EventEmitter {
     }
 
     // enqueue the block
-    this.queue.push({
-      method: this.storeBlock.bind(this),
-      attrs: {
-        height,
+    this.queue.push(
+      {
+        method: this.storeBlock.bind(this),
+        attrs: {
+          height,
+        },
       },
-    }, priority)
+      priority
+    )
   }
 
   /**
@@ -336,18 +341,21 @@ export class Syncer extends EventEmitter {
     this.logger.debug('enqueuePruneBlock triggered. height:', height, 'redundancySize:', redundancySize, 'priority:', priority)
     this.emit('enqueuePruneBlock:init', { height, redundancySize, priority })
 
-    this.queue.push({
-      method: this.pruneBlock.bind(this),
-      attrs: {
-        height,
-        redundancySize,
+    this.queue.push(
+      {
+        method: this.pruneBlock.bind(this),
+        attrs: {
+          height,
+          redundancySize,
+        },
       },
-    }, priority)
+      priority
+    )
   }
 
   private storeBlock(attrs: object): Promise<any> {
     this.logger.debug('storeBlock triggered. attrs:', attrs)
-    const height: number = (<any> attrs).height
+    const height: number = (<any>attrs).height
 
     this.emit('storeBlock:init', { height })
     return new Promise((resolve, reject) => {
@@ -357,7 +365,8 @@ export class Syncer extends EventEmitter {
         return reject(new Error('No valid node found.'))
       }
 
-      node.getBlock(height)
+      node
+        .getBlock(height)
         .then((block) => {
           const source = node.endpoint
           this.storage!.setBlock(height, block, source)
@@ -382,8 +391,8 @@ export class Syncer extends EventEmitter {
 
   private pruneBlock(attrs: object): Promise<any> {
     this.logger.debug('pruneBlock triggered. attrs:', attrs)
-    const height: number = (<any> attrs).height
-    const redundancySize: number = (<any> attrs).redundancySize
+    const height: number = (<any>attrs).height
+    const redundancySize: number = (<any>attrs).redundancySize
 
     return new Promise((resolve, reject) => {
       this.storage!.pruneBlock(height, redundancySize)

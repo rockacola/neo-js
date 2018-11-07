@@ -18,15 +18,15 @@ const DEFAULT_OPTIONS: MongodbStorageOptions = {
 }
 
 export interface MongodbStorageOptions {
-  connectOnInit?: boolean,
-  connectionString?: string,
-  userAgent?: string,
+  connectOnInit?: boolean
+  connectionString?: string
+  userAgent?: string
   collectionNames?: {
-    blocks?: string,
-    transactions?: string,
-    assets?: string,
-  },
-  loggerOptions?: LoggerOptions,
+    blocks?: string
+    transactions?: string
+    assets?: string
+  }
+  loggerOptions?: LoggerOptions
 }
 
 export class MongodbStorage extends EventEmitter {
@@ -57,7 +57,8 @@ export class MongodbStorage extends EventEmitter {
   getBlockCount(): Promise<number> {
     this.logger.debug('getBlockCount triggered.')
     return new Promise((resolve, reject) => {
-      this.blockModel.findOne({}, 'height')
+      this.blockModel
+        .findOne({}, 'height')
         .sort({ height: -1 })
         .exec((err: any, res: any) => {
           if (err) {
@@ -140,14 +141,13 @@ export class MongodbStorage extends EventEmitter {
             const toPrune = takeRight(docs, takeCount)
             toPrune.forEach((doc: any) => {
               this.logger.debug('Removing document id:', doc._id)
-              this.blockModel.remove({ _id: doc._id })
-                .exec((err: any, res: any) => {
-                  if (err) {
-                    this.logger.debug('blockModel.remove() execution failed. error:', err.message)
-                  } else {
-                    this.logger.debug('blockModel.remove() execution succeed.')
-                  }
-                })
+              this.blockModel.remove({ _id: doc._id }).exec((err: any, res: any) => {
+                if (err) {
+                  this.logger.debug('blockModel.remove() execution failed. error:', err.message)
+                } else {
+                  this.logger.debug('blockModel.remove() execution succeed.')
+                }
+              })
             })
           }
           resolve()
@@ -176,7 +176,8 @@ export class MongodbStorage extends EventEmitter {
         },
         {
           $match: {
-            _id: { // This '_id' is now referring to $height as designated in $group
+            _id: {
+              // This '_id' is now referring to $height as designated in $group
               $gte: startHeight,
               $lte: endHeight,
             },
@@ -184,7 +185,8 @@ export class MongodbStorage extends EventEmitter {
         },
       ]
 
-      this.blockModel.aggregate(aggregatorOptions)
+      this.blockModel
+        .aggregate(aggregatorOptions)
         .allowDiskUse(true)
         .exec((err: Error, res: any) => {
           if (err) {
@@ -206,29 +208,32 @@ export class MongodbStorage extends EventEmitter {
   }
 
   private getBlockModel() {
-    const schema = new Schema({
-      height: Number,
-      createdBy: String,
-      source: String,
-      payload: {
-        hash: String,
-        size: Number,
-        version: Number,
-        previousblockhash: String,
-        merkleroot: String,
-        time: Number,
-        index: { type: 'Number', required: true },
-        nonce: String,
-        nextconsensus: String,
-        script: {
-          invocation: String,
-          verification: String
+    const schema = new Schema(
+      {
+        height: Number,
+        createdBy: String,
+        source: String,
+        payload: {
+          hash: String,
+          size: Number,
+          version: Number,
+          previousblockhash: String,
+          merkleroot: String,
+          time: Number,
+          index: { type: 'Number', required: true },
+          nonce: String,
+          nextconsensus: String,
+          script: {
+            invocation: String,
+            verification: String,
+          },
+          tx: [],
+          confirmations: Number,
+          nextblockhash: String,
         },
-        tx: [],
-        confirmations: Number,
-        nextblockhash: String
       },
-    }, { timestamps: true })
+      { timestamps: true }
+    )
 
     return mongoose.models[this.options.collectionNames!.blocks!] || mongoose.model(this.options.collectionNames!.blocks!, schema)
   }
@@ -238,7 +243,11 @@ export class MongodbStorage extends EventEmitter {
       this.logger.debug('initConnection triggered.')
       // TODO: valid connection string
 
-      mongoose.connect(this.options.connectionString!, { useMongoClient: true })
+      mongoose
+        .connect(
+          this.options.connectionString!,
+          { useMongoClient: true }
+        )
         .then(() => {
           this.setReady()
           this.logger.info('mongoose connected.')
@@ -263,7 +272,8 @@ export class MongodbStorage extends EventEmitter {
      * It is assumed that there may be multiple matches and will pick 'latest created' one as truth.
      */
     return new Promise((resolve, reject) => {
-      this.blockModel.findOne({ height })
+      this.blockModel
+        .findOne({ height })
         .sort({ createdAt: -1 })
         .exec((err: any, res: any) => {
           if (err) {
@@ -282,7 +292,8 @@ export class MongodbStorage extends EventEmitter {
     this.logger.debug('getBlockDocuments triggered. height:', height)
 
     return new Promise((resolve, reject) => {
-      this.blockModel.find({ height })
+      this.blockModel
+        .find({ height })
         .sort({ createdAt: -1 })
         .exec((err: any, res: any) => {
           if (err) {
