@@ -31,7 +31,7 @@ class Mesh extends events_1.EventEmitter {
     }
     startBenchmark() {
         this.logger.debug('startBenchmark triggered.');
-        const unknownNodes = lodash_1.filter(this.nodes, (n) => (n.isActive === undefined));
+        const unknownNodes = lodash_1.filter(this.nodes, (n) => n.isActive === undefined);
         this.logger.debug('unknownNodes.length:', unknownNodes.length);
         unknownNodes.forEach((n) => {
             n.getBlockCount()
@@ -49,6 +49,39 @@ class Mesh extends events_1.EventEmitter {
         if (this.benchmarkIntervalId) {
             clearInterval(this.benchmarkIntervalId);
         }
+    }
+    getFastestNode(activeOnly = true) {
+        this.logger.debug('getFastestNode triggered.');
+        let nodePool = activeOnly ? this.listActiveNodes() : this.nodes;
+        if (nodePool.length === 0) {
+            return undefined;
+        }
+        nodePool = lodash_1.filter(nodePool, (n) => n.latency !== undefined);
+        if (nodePool.length === 0) {
+            return undefined;
+        }
+        return lodash_1.minBy(nodePool, 'latency');
+    }
+    getHighestNode(activeOnly = true) {
+        this.logger.debug('getHighestNode triggered.');
+        let nodePool = activeOnly ? this.listActiveNodes() : this.nodes;
+        if (nodePool.length === 0) {
+            return undefined;
+        }
+        nodePool = lodash_1.filter(nodePool, (n) => n.blockHeight !== undefined);
+        if (nodePool.length === 0) {
+            return undefined;
+        }
+        return lodash_1.maxBy(nodePool, 'blockHeight');
+    }
+    getRandomNode(activeOnly = true) {
+        this.logger.debug('getRandomNode triggered.');
+        const nodePool = activeOnly ? this.listActiveNodes() : this.nodes;
+        if (nodePool.length === 0) {
+            return undefined;
+        }
+        const randomIndex = lodash_1.random(0, nodePool.length - 1);
+        return nodePool[randomIndex];
     }
     validateOptionalParameters() {
     }
@@ -72,39 +105,6 @@ class Mesh extends events_1.EventEmitter {
     setReady() {
         this._isReady = true;
         this.emit('ready');
-    }
-    getFastestNode(activeOnly = true) {
-        this.logger.debug('getFastestNode triggered.');
-        let nodePool = activeOnly ? this.listActiveNodes() : this.nodes;
-        if (nodePool.length === 0) {
-            return undefined;
-        }
-        nodePool = lodash_1.filter(nodePool, (n) => (n.latency !== undefined));
-        if (nodePool.length === 0) {
-            return undefined;
-        }
-        return lodash_1.minBy(nodePool, 'latency');
-    }
-    getHighestNode(activeOnly = true) {
-        this.logger.debug('getHighestNode triggered.');
-        let nodePool = activeOnly ? this.listActiveNodes() : this.nodes;
-        if (nodePool.length === 0) {
-            return undefined;
-        }
-        nodePool = lodash_1.filter(nodePool, (n) => (n.blockHeight !== undefined));
-        if (nodePool.length === 0) {
-            return undefined;
-        }
-        return lodash_1.maxBy(nodePool, 'blockHeight');
-    }
-    getRandomNode(activeOnly = true) {
-        this.logger.debug('getRandomNode triggered.');
-        const nodePool = activeOnly ? this.listActiveNodes() : this.nodes;
-        if (nodePool.length === 0) {
-            return undefined;
-        }
-        const randomIndex = lodash_1.random(0, nodePool.length - 1);
-        return nodePool[randomIndex];
     }
     listActiveNodes() {
         return lodash_1.filter(this.nodes, { isActive: true });

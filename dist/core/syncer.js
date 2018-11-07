@@ -136,10 +136,10 @@ class Syncer extends events_1.EventEmitter {
         return !!(this.options.maxHeight && this.blockWritePointer >= this.options.maxHeight);
     }
     isReachedHighestBlock(node) {
-        return (this.blockWritePointer >= node.blockHeight);
+        return this.blockWritePointer >= node.blockHeight;
     }
     isReachedMaxQueueLength() {
-        return (this.queue.length() >= this.options.maxQueueLength);
+        return this.queue.length() >= this.options.maxQueueLength;
     }
     setBlockWritePointer() {
         this.logger.debug('setBlockWritePointer triggered.');
@@ -174,10 +174,10 @@ class Syncer extends events_1.EventEmitter {
         this.logger.debug('doBlockVerification triggered.');
         this.emit('blockVerification:init');
         const startHeight = this.options.minHeight;
-        const endHeight = (this.options.maxHeight && this.blockWritePointer > this.options.maxHeight) ? this.options.maxHeight : this.blockWritePointer;
+        const endHeight = this.options.maxHeight && this.blockWritePointer > this.options.maxHeight ? this.options.maxHeight : this.blockWritePointer;
         this.storage.analyzeBlocks(startHeight, endHeight)
             .then((res) => {
-            let all = [];
+            const all = [];
             for (let i = startHeight; i <= endHeight; i++) {
                 all.push(i);
             }
@@ -201,7 +201,7 @@ class Syncer extends events_1.EventEmitter {
                 });
             }
             if (this.options.blockRedundancy > 1) {
-                let insufficientBlocks = lodash_1.map(lodash_1.filter(res, (item) => item.count < this.options.blockRedundancy), (item) => item._id);
+                const insufficientBlocks = lodash_1.map(lodash_1.filter(res, (item) => item.count < this.options.blockRedundancy), (item) => item._id);
                 this.logger.info('Blocks insufficient redundancy count:', insufficientBlocks.length);
                 throw new Error('Not Implemented.');
             }
@@ -258,7 +258,8 @@ class Syncer extends events_1.EventEmitter {
                 this.emit('storeBlock:complete', { isSuccess: false, height });
                 return reject(new Error('No valid node found.'));
             }
-            node.getBlock(height)
+            node
+                .getBlock(height)
                 .then((block) => {
                 const source = node.endpoint;
                 this.storage.setBlock(height, block, source)

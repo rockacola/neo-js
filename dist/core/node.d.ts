@@ -15,12 +15,12 @@ export declare class Node extends EventEmitter {
     private options;
     private logger;
     constructor(endpoint: string, options?: NodeOptions);
-    private queryInitHandler;
-    private querySuccessHandler;
-    private queryFailedHandler;
     getBlock(height: number, isVerbose?: boolean): Promise<object>;
     getBlockCount(): Promise<object>;
     getVersion(): Promise<object>;
+    private queryInitHandler;
+    private querySuccessHandler;
+    private queryFailedHandler;
     private validateOptionalParameters;
     private query;
     private increasePendingRequest;

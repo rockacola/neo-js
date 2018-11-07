@@ -29,11 +29,11 @@ export declare class Neo extends EventEmitter {
     static readonly VERSION: string;
     readonly VERSION: string;
     readonly UserAgent: string;
+    close(): void;
     private validateOptionalParameters;
     private getMesh;
     private getStorage;
     private getApi;
     private getSyncer;
     private getNodes;
-    close(): void;
 }

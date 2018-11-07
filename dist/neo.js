@@ -38,6 +38,18 @@ class Neo extends events_1.EventEmitter {
     get UserAgent() {
         return `neo-js:${this.VERSION}`;
     }
+    close() {
+        this.logger.debug('close triggered.');
+        if (this.syncer) {
+            this.syncer.stop();
+        }
+        if (this.mesh) {
+            this.mesh.stopBenchmark();
+        }
+        if (this.storage) {
+            this.storage.disconnect();
+        }
+    }
     validateOptionalParameters() {
     }
     getMesh() {
@@ -85,24 +97,12 @@ class Neo extends events_1.EventEmitter {
         else {
             throw new Error('Invalid network or provided endpoints.');
         }
-        let nodes = [];
+        const nodes = [];
         endpoints.forEach((item) => {
             const node = new node_1.Node(item.endpoint, this.options.nodeOptions);
             nodes.push(node);
         });
         return nodes;
-    }
-    close() {
-        this.logger.debug('close triggered.');
-        if (this.syncer) {
-            this.syncer.stop();
-        }
-        if (this.mesh) {
-            this.mesh.stopBenchmark();
-        }
-        if (this.storage) {
-            this.storage.disconnect();
-        }
     }
 }
 exports.Neo = Neo;

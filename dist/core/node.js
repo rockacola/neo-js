@@ -24,6 +24,20 @@ class Node extends events_1.EventEmitter {
         this.on('query:failed', this.queryFailedHandler.bind(this));
         this.logger.debug('constructor completes.');
     }
+    getBlock(height, isVerbose = true) {
+        this.logger.debug('getBlock triggered.');
+        neo_validator_1.NeoValidator.validateHeight(height);
+        const verboseKey = isVerbose ? 1 : 0;
+        return this.query(constants_1.default.rpc.getblock, [height, verboseKey]);
+    }
+    getBlockCount() {
+        this.logger.debug('getBlockCount triggered.');
+        return this.query(constants_1.default.rpc.getblockcount);
+    }
+    getVersion() {
+        this.logger.debug('getVersion triggered.');
+        return this.query(constants_1.default.rpc.getversion);
+    }
     queryInitHandler(payload) {
         this.logger.debug('queryInitHandler triggered.');
         if (this.options.toBenchmark) {
@@ -52,20 +66,6 @@ class Node extends events_1.EventEmitter {
             this.isActive = false;
         }
     }
-    getBlock(height, isVerbose = true) {
-        this.logger.debug('getBlock triggered.');
-        neo_validator_1.NeoValidator.validateHeight(height);
-        const verboseKey = isVerbose ? 1 : 0;
-        return this.query(constants_1.default.rpc.getblock, [height, verboseKey]);
-    }
-    getBlockCount() {
-        this.logger.debug('getBlockCount triggered.');
-        return this.query(constants_1.default.rpc.getblockcount);
-    }
-    getVersion() {
-        this.logger.debug('getVersion triggered.');
-        return this.query(constants_1.default.rpc.getversion);
-    }
     validateOptionalParameters() {
     }
     query(method, params = [], id = DEFAULT_ID) {
@@ -77,7 +77,7 @@ class Node extends events_1.EventEmitter {
                 .then((res) => {
                 const latency = Date.now() - t0;
                 const result = res.result;
-                const blockHeight = (method === constants_1.default.rpc.getblockcount) ? result : undefined;
+                const blockHeight = method === constants_1.default.rpc.getblockcount ? result : undefined;
                 this.emit('query:success', { method, latency, blockHeight });
                 return resolve(result);
             })

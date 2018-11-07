@@ -31,56 +31,11 @@ class MongodbStorage extends events_1.EventEmitter {
     isReady() {
         return this._isReady;
     }
-    validateOptionalParameters() {
-    }
-    getBlockModel() {
-        const schema = new mongoose_1.Schema({
-            height: Number,
-            createdBy: String,
-            source: String,
-            payload: {
-                hash: String,
-                size: Number,
-                version: Number,
-                previousblockhash: String,
-                merkleroot: String,
-                time: Number,
-                index: { type: 'Number', required: true },
-                nonce: String,
-                nextconsensus: String,
-                script: {
-                    invocation: String,
-                    verification: String
-                },
-                tx: [],
-                confirmations: Number,
-                nextblockhash: String
-            },
-        }, { timestamps: true });
-        return mongoose.models[this.options.collectionNames.blocks] || mongoose.model(this.options.collectionNames.blocks, schema);
-    }
-    initConnection() {
-        if (this.options.connectOnInit) {
-            this.logger.debug('initConnection triggered.');
-            mongoose.connect(this.options.connectionString, { useMongoClient: true })
-                .then(() => {
-                this.setReady();
-                this.logger.info('mongoose connected.');
-            })
-                .catch((err) => {
-                this.logger.error('Error establish MongoDB connection.');
-                throw err;
-            });
-        }
-    }
-    setReady() {
-        this._isReady = true;
-        this.emit('ready');
-    }
     getBlockCount() {
         this.logger.debug('getBlockCount triggered.');
         return new Promise((resolve, reject) => {
-            this.blockModel.findOne({}, 'height')
+            this.blockModel
+                .findOne({}, 'height')
                 .sort({ height: -1 })
                 .exec((err, res) => {
                 if (err) {
@@ -111,23 +66,6 @@ class MongodbStorage extends events_1.EventEmitter {
                 .catch((err) => reject(err));
         });
     }
-    getBlockDocument(height) {
-        this.logger.debug('getBlockDocument triggered. height:', height);
-        return new Promise((resolve, reject) => {
-            this.blockModel.findOne({ height })
-                .sort({ createdAt: -1 })
-                .exec((err, res) => {
-                if (err) {
-                    this.logger.warn('blockModel.findOne() execution failed. error:', err.message);
-                    return reject(err);
-                }
-                if (!res) {
-                    return reject(new Error('No result found.'));
-                }
-                return resolve(res.payload);
-            });
-        });
-    }
     getBlocks(height) {
         this.logger.debug('getBlocks triggered. height:', height);
         return new Promise((resolve, reject) => {
@@ -140,23 +78,6 @@ class MongodbStorage extends events_1.EventEmitter {
                 return resolve(result);
             })
                 .catch((err) => reject(err));
-        });
-    }
-    getBlockDocuments(height) {
-        this.logger.debug('getBlockDocuments triggered. height:', height);
-        return new Promise((resolve, reject) => {
-            this.blockModel.find({ height })
-                .sort({ createdAt: -1 })
-                .exec((err, res) => {
-                if (err) {
-                    this.logger.warn('blockModel.find() execution failed. error:', err.message);
-                    return reject(err);
-                }
-                if (!res) {
-                    return resolve([]);
-                }
-                return resolve(res);
-            });
         });
     }
     setBlock(height, block, source) {
@@ -188,8 +109,7 @@ class MongodbStorage extends events_1.EventEmitter {
                     const toPrune = lodash_1.takeRight(docs, takeCount);
                     toPrune.forEach((doc) => {
                         this.logger.debug('Removing document id:', doc._id);
-                        this.blockModel.remove({ _id: doc._id })
-                            .exec((err, res) => {
+                        this.blockModel.remove({ _id: doc._id }).exec((err, res) => {
                             if (err) {
                                 this.logger.debug('blockModel.remove() execution failed. error:', err.message);
                             }
@@ -223,7 +143,8 @@ class MongodbStorage extends events_1.EventEmitter {
                     },
                 },
             ];
-            this.blockModel.aggregate(aggregatorOptions)
+            this.blockModel
+                .aggregate(aggregatorOptions)
                 .allowDiskUse(true)
                 .exec((err, res) => {
                 if (err) {
@@ -236,6 +157,89 @@ class MongodbStorage extends events_1.EventEmitter {
     disconnect() {
         this.logger.debug('disconnect triggered.');
         return mongoose.disconnect();
+    }
+    validateOptionalParameters() {
+    }
+    getBlockModel() {
+        const schema = new mongoose_1.Schema({
+            height: Number,
+            createdBy: String,
+            source: String,
+            payload: {
+                hash: String,
+                size: Number,
+                version: Number,
+                previousblockhash: String,
+                merkleroot: String,
+                time: Number,
+                index: { type: 'Number', required: true },
+                nonce: String,
+                nextconsensus: String,
+                script: {
+                    invocation: String,
+                    verification: String,
+                },
+                tx: [],
+                confirmations: Number,
+                nextblockhash: String,
+            },
+        }, { timestamps: true });
+        return mongoose.models[this.options.collectionNames.blocks] || mongoose.model(this.options.collectionNames.blocks, schema);
+    }
+    initConnection() {
+        if (this.options.connectOnInit) {
+            this.logger.debug('initConnection triggered.');
+            mongoose
+                .connect(this.options.connectionString, { useMongoClient: true })
+                .then(() => {
+                this.setReady();
+                this.logger.info('mongoose connected.');
+            })
+                .catch((err) => {
+                this.logger.error('Error establish MongoDB connection.');
+                throw err;
+            });
+        }
+    }
+    setReady() {
+        this._isReady = true;
+        this.emit('ready');
+    }
+    getBlockDocument(height) {
+        this.logger.debug('getBlockDocument triggered. height:', height);
+        return new Promise((resolve, reject) => {
+            this.blockModel
+                .findOne({ height })
+                .sort({ createdAt: -1 })
+                .exec((err, res) => {
+                if (err) {
+                    this.logger.warn('blockModel.findOne() execution failed. error:', err.message);
+                    return reject(err);
+                }
+                if (!res) {
+                    return reject(new Error('No result found.'));
+                }
+                return resolve(res.payload);
+            });
+        });
+    }
+    getBlockDocuments(height) {
+        this.logger.debug('getBlockDocuments triggered. height:', height);
+        return new Promise((resolve, reject) => {
+            this.blockModel
+                .find({ height })
+                .sort({ createdAt: -1 })
+                .exec((err, res) => {
+                if (err) {
+                    this.logger.warn('blockModel.find() execution failed. error:', err.message);
+                    return reject(err);
+                }
+                if (!res) {
+                    return resolve([]);
+                }
+                return resolve(res);
+            });
+        });
     }
 }
 exports.MongodbStorage = MongodbStorage;

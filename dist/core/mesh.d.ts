@@ -18,12 +18,12 @@ export declare class Mesh extends EventEmitter {
     isReady(): boolean;
     startBenchmark(): void;
     stopBenchmark(): void;
+    getFastestNode(activeOnly?: boolean): Node | undefined;
+    getHighestNode(activeOnly?: boolean): Node | undefined;
+    getRandomNode(activeOnly?: boolean): Node | undefined;
     private validateOptionalParameters;
     private performBenchmark;
     private checkMeshReady;
     private setReady;
-    getFastestNode(activeOnly?: boolean): Node | undefined;
-    getHighestNode(activeOnly?: boolean): Node | undefined;
-    getRandomNode(activeOnly?: boolean): Node | undefined;
     private listActiveNodes;
 }

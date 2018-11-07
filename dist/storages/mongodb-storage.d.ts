@@ -19,18 +19,18 @@ export declare class MongodbStorage extends EventEmitter {
     private logger;
     constructor(options?: MongodbStorageOptions);
     isReady(): boolean;
-    private validateOptionalParameters;
-    private getBlockModel;
-    private initConnection;
-    private setReady;
     getBlockCount(): Promise<number>;
     setBlockCount(blockHeight: number): Promise<void>;
     getBlock(height: number): Promise<object>;
-    private getBlockDocument;
     getBlocks(height: number): Promise<object[]>;
-    private getBlockDocuments;
     setBlock(height: number, block: object, source: string): Promise<void>;
     pruneBlock(height: number, redundancySize: number): Promise<void>;
     analyzeBlocks(startHeight: number, endHeight: number): Promise<object[]>;
     disconnect(): Promise<void>;
+    private validateOptionalParameters;
+    private getBlockModel;
+    private initConnection;
+    private setReady;
+    private getBlockDocument;
+    private getBlockDocuments;
 }
