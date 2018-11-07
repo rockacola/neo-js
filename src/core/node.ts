@@ -18,12 +18,12 @@ export interface NodeOptions {
 }
 
 export class Node extends EventEmitter {
-  public isActive: boolean | undefined
-  public pendingRequests: number | undefined
-  public latency: number | undefined // In milliseconds
-  public blockHeight: number | undefined
-  public lastSeenTimestamp: number | undefined
-  public endpoint: string
+  isActive: boolean | undefined
+  pendingRequests: number | undefined
+  latency: number | undefined // In milliseconds
+  blockHeight: number | undefined
+  lastSeenTimestamp: number | undefined
+  endpoint: string
 
   private options: NodeOptions
   private logger: Logger
@@ -47,6 +47,25 @@ export class Node extends EventEmitter {
     this.on('query:failed', this.queryFailedHandler.bind(this))
 
     this.logger.debug('constructor completes.')
+  }
+
+  getBlock(height: number, isVerbose: boolean = true): Promise<object> {
+    this.logger.debug('getBlock triggered.')
+
+    NeoValidator.validateHeight(height)
+
+    const verboseKey: number = isVerbose ? 1 : 0
+    return this.query(C.rpc.getblock, [height, verboseKey])
+  }
+
+  getBlockCount(): Promise<object> {
+    this.logger.debug('getBlockCount triggered.')
+    return this.query(C.rpc.getblockcount)
+  }
+
+  getVersion(): Promise<object> {
+    this.logger.debug('getVersion triggered.')
+    return this.query(C.rpc.getversion)
   }
 
   private queryInitHandler(payload: object) {
@@ -78,25 +97,6 @@ export class Node extends EventEmitter {
       this.lastSeenTimestamp = Date.now()
       this.isActive = false
     }
-  }
-
-  getBlock(height: number, isVerbose: boolean = true): Promise<object> {
-    this.logger.debug('getBlock triggered.')
-
-    NeoValidator.validateHeight(height)
-
-    const verboseKey: number = isVerbose ? 1 : 0
-    return this.query(C.rpc.getblock, [height, verboseKey])
-  }
-
-  getBlockCount(): Promise<object> {
-    this.logger.debug('getBlockCount triggered.')
-    return this.query(C.rpc.getblockcount)
-  }
-
-  getVersion(): Promise<object> {
-    this.logger.debug('getVersion triggered.')
-    return this.query(C.rpc.getversion)
   }
 
   private validateOptionalParameters() {

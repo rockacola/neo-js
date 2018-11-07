@@ -19,7 +19,8 @@ export interface MeshOptions {
 }
 
 export class Mesh extends EventEmitter {
-  public nodes: Node[] // Ensure there's at least 1 item in the array
+  nodes: Node[] // Ensure there's at least 1 item in the array
+
   private _isReady = false
   private benchmarkIntervalId?: NodeJS.Timer
   private options: MeshOptions
@@ -78,36 +79,6 @@ export class Mesh extends EventEmitter {
     }
   }
 
-  private validateOptionalParameters() {
-    // TODO
-  }
-
-  private performBenchmark() {
-    this.logger.debug('performBenchmark triggered.')
-
-    // pick and ping a random node
-    const node = this.getRandomNode()
-    if (node) {
-      node.getBlockCount()
-    }
-  }
-
-  private checkMeshReady() {
-    this.logger.debug('checkMeshReady triggered.')
-    const activeNodes = this.listActiveNodes()
-    if (!this.options.minActiveNodesRequired || activeNodes.length >= this.options.minActiveNodesRequired) {
-      if (!this._isReady) { // First signal that mesh is considered as 'ready' state
-        this.setReady()
-        this.logger.debug('mesh is considered to be now ready.')
-      }
-    }
-  }
-
-  private setReady() {
-    this._isReady = true
-    this.emit('ready')
-  }
-
   getFastestNode(activeOnly = true): Node | undefined {
     this.logger.debug('getFastestNode triggered.')
 
@@ -153,6 +124,36 @@ export class Mesh extends EventEmitter {
 
     const randomIndex = random(0, nodePool.length-1)
     return nodePool[randomIndex]
+  }
+
+  private validateOptionalParameters() {
+    // TODO
+  }
+
+  private performBenchmark() {
+    this.logger.debug('performBenchmark triggered.')
+
+    // pick and ping a random node
+    const node = this.getRandomNode()
+    if (node) {
+      node.getBlockCount()
+    }
+  }
+
+  private checkMeshReady() {
+    this.logger.debug('checkMeshReady triggered.')
+    const activeNodes = this.listActiveNodes()
+    if (!this.options.minActiveNodesRequired || activeNodes.length >= this.options.minActiveNodesRequired) {
+      if (!this._isReady) { // First signal that mesh is considered as 'ready' state
+        this.setReady()
+        this.logger.debug('mesh is considered to be now ready.')
+      }
+    }
+  }
+
+  private setReady() {
+    this._isReady = true
+    this.emit('ready')
   }
 
   private listActiveNodes(): Node[] {

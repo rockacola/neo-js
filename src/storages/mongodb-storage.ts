@@ -54,60 +54,6 @@ export class MongodbStorage extends EventEmitter {
     return this._isReady
   }
 
-  private validateOptionalParameters() {
-    // TODO
-  }
-
-  private getBlockModel() {
-    const schema = new Schema({
-      height: Number,
-      createdBy: String,
-      source: String,
-      payload: {
-        hash: String,
-        size: Number,
-        version: Number,
-        previousblockhash: String,
-        merkleroot: String,
-        time: Number,
-        index: { type: 'Number', required: true },
-        nonce: String,
-        nextconsensus: String,
-        script: {
-          invocation: String,
-          verification: String
-        },
-        tx: [],
-        confirmations: Number,
-        nextblockhash: String
-      },
-    }, { timestamps: true })
-
-    return mongoose.models[this.options.collectionNames!.blocks!] || mongoose.model(this.options.collectionNames!.blocks!, schema)
-  }
-
-  private initConnection() {
-    if (this.options.connectOnInit) {
-      this.logger.debug('initConnection triggered.')
-      // TODO: valid connection string
-
-      mongoose.connect(this.options.connectionString!, { useMongoClient: true })
-        .then(() => {
-          this.setReady()
-          this.logger.info('mongoose connected.')
-        })
-        .catch((err: any) => {
-          this.logger.error('Error establish MongoDB connection.')
-          throw err
-        })
-    }
-  }
-
-  private setReady() {
-    this._isReady = true
-    this.emit('ready')
-  }
-
   getBlockCount(): Promise<number> {
     this.logger.debug('getBlockCount triggered.')
     return new Promise((resolve, reject) => {
@@ -146,29 +92,6 @@ export class MongodbStorage extends EventEmitter {
     })
   }
 
-  private getBlockDocument(height: number): Promise<object> {
-    this.logger.debug('getBlockDocument triggered. height:', height)
-
-    /**
-     * NOTE:
-     * It is assumed that there may be multiple matches and will pick 'latest created' one as truth.
-     */
-    return new Promise((resolve, reject) => {
-      this.blockModel.findOne({ height })
-        .sort({ createdAt: -1 })
-        .exec((err: any, res: any) => {
-          if (err) {
-            this.logger.warn('blockModel.findOne() execution failed. error:', err.message)
-            return reject(err)
-          }
-          if (!res) {
-            return reject(new Error('No result found.'))
-          }
-          return resolve(res.payload)
-        })
-    })
-  }
-
   getBlocks(height: number): Promise<object[]> {
     this.logger.debug('getBlocks triggered. height:', height)
 
@@ -182,26 +105,6 @@ export class MongodbStorage extends EventEmitter {
           return resolve(result)
         })
         .catch((err: any) => reject(err))
-    })
-  }
-
-  private getBlockDocuments(height: number): Promise<object[]> {
-    this.logger.debug('getBlockDocuments triggered. height:', height)
-
-    return new Promise((resolve, reject) => {
-      this.blockModel.find({ height })
-        .sort({ createdAt: -1 })
-        .exec((err: any, res: any) => {
-          if (err) {
-            this.logger.warn('blockModel.find() execution failed. error:', err.message)
-            return reject(err)
-          }
-          if (!res) {
-            // TODO: Verify if res is array
-            return resolve([])
-          }
-          return resolve(res)
-        })
     })
   }
 
@@ -296,5 +199,102 @@ export class MongodbStorage extends EventEmitter {
   disconnect(): Promise<void> {
     this.logger.debug('disconnect triggered.')
     return mongoose.disconnect()
+  }
+
+  private validateOptionalParameters() {
+    // TODO
+  }
+
+  private getBlockModel() {
+    const schema = new Schema({
+      height: Number,
+      createdBy: String,
+      source: String,
+      payload: {
+        hash: String,
+        size: Number,
+        version: Number,
+        previousblockhash: String,
+        merkleroot: String,
+        time: Number,
+        index: { type: 'Number', required: true },
+        nonce: String,
+        nextconsensus: String,
+        script: {
+          invocation: String,
+          verification: String
+        },
+        tx: [],
+        confirmations: Number,
+        nextblockhash: String
+      },
+    }, { timestamps: true })
+
+    return mongoose.models[this.options.collectionNames!.blocks!] || mongoose.model(this.options.collectionNames!.blocks!, schema)
+  }
+
+  private initConnection() {
+    if (this.options.connectOnInit) {
+      this.logger.debug('initConnection triggered.')
+      // TODO: valid connection string
+
+      mongoose.connect(this.options.connectionString!, { useMongoClient: true })
+        .then(() => {
+          this.setReady()
+          this.logger.info('mongoose connected.')
+        })
+        .catch((err: any) => {
+          this.logger.error('Error establish MongoDB connection.')
+          throw err
+        })
+    }
+  }
+
+  private setReady() {
+    this._isReady = true
+    this.emit('ready')
+  }
+
+  private getBlockDocument(height: number): Promise<object> {
+    this.logger.debug('getBlockDocument triggered. height:', height)
+
+    /**
+     * NOTE:
+     * It is assumed that there may be multiple matches and will pick 'latest created' one as truth.
+     */
+    return new Promise((resolve, reject) => {
+      this.blockModel.findOne({ height })
+        .sort({ createdAt: -1 })
+        .exec((err: any, res: any) => {
+          if (err) {
+            this.logger.warn('blockModel.findOne() execution failed. error:', err.message)
+            return reject(err)
+          }
+          if (!res) {
+            return reject(new Error('No result found.'))
+          }
+          return resolve(res.payload)
+        })
+    })
+  }
+
+  private getBlockDocuments(height: number): Promise<object[]> {
+    this.logger.debug('getBlockDocuments triggered. height:', height)
+
+    return new Promise((resolve, reject) => {
+      this.blockModel.find({ height })
+        .sort({ createdAt: -1 })
+        .exec((err: any, res: any) => {
+          if (err) {
+            this.logger.warn('blockModel.find() execution failed. error:', err.message)
+            return reject(err)
+          }
+          if (!res) {
+            // TODO: Verify if res is array
+            return resolve([])
+          }
+          return resolve(res)
+        })
+    })
   }
 }

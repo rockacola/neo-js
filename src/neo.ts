@@ -30,10 +30,10 @@ export interface NeoOptions {
 }
 
 export class Neo extends EventEmitter {
-  public mesh: Mesh
-  public storage?: MemoryStorage | MongodbStorage
-  public api: Api
-  public syncer: Syncer
+  mesh: Mesh
+  storage?: MemoryStorage | MongodbStorage
+  api: Api
+  syncer: Syncer
 
   private options: NeoOptions
   private logger: Logger
@@ -65,6 +65,19 @@ export class Neo extends EventEmitter {
 
   get UserAgent(): string {
     return `neo-js:${this.VERSION}`
+  }
+
+  close() {
+    this.logger.debug('close triggered.')
+    if (this.syncer) {
+      this.syncer.stop()
+    }
+    if (this.mesh) {
+      this.mesh.stopBenchmark()
+    }
+    if (this.storage) {
+      this.storage.disconnect()
+    }
   }
 
   private validateOptionalParameters() {
@@ -117,25 +130,12 @@ export class Neo extends EventEmitter {
     }
 
     // Instantiate nodes
-    let nodes: Node[] = []
+    const nodes: Node[] = []
     endpoints.forEach((item) => {
       const node = new Node((<any> item).endpoint, this.options.nodeOptions)
       nodes.push(node)
     })
 
     return nodes
-  }
-
-  close() {
-    this.logger.debug('close triggered.')
-    if (this.syncer) {
-      this.syncer.stop()
-    }
-    if (this.mesh) {
-      this.mesh.stopBenchmark()
-    }
-    if (this.storage) {
-      this.storage.disconnect()
-    }
   }
 }

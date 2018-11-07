@@ -143,9 +143,9 @@ export class Syncer extends EventEmitter {
      * @param {object} task.attrs
      * @param {function} callback
      */
-    return priorityQueue((task: object, callback: Function) => {
-      const method: Function = (<any> task).method
-      const attrs: Object = (<any> task).attrs
+    return priorityQueue((task: object, callback: () => void) => {
+      const method: (attrs: object) => Promise<any> = (<any> task).method
+      const attrs: object = (<any> task).attrs
       this.logger.debug('new worker for queue.')
 
       method(attrs)
@@ -249,7 +249,7 @@ export class Syncer extends EventEmitter {
 
     this.storage!.analyzeBlocks(startHeight, endHeight)
       .then((res: object[]) => {
-        let all: number[] = []
+        const all: number[] = []
         for (let i = startHeight; i <= endHeight; i++) {
           all.push(i);
         }
@@ -280,7 +280,7 @@ export class Syncer extends EventEmitter {
 
         // Enqueue for redundancy blocks
         if (this.options.blockRedundancy! > 1) {
-          let insufficientBlocks = map(filter(res, (item: any) => item.count < this.options.blockRedundancy!), (item: any) => item._id)
+          const insufficientBlocks = map(filter(res, (item: any) => item.count < this.options.blockRedundancy!), (item: any) => item._id)
           this.logger.info('Blocks insufficient redundancy count:', insufficientBlocks.length)
           // TODO
           throw new Error('Not Implemented.')
