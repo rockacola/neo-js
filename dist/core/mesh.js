@@ -89,7 +89,9 @@ class Mesh extends events_1.EventEmitter {
         this.logger.debug('performBenchmark triggered.');
         const node = this.getRandomNode();
         if (node) {
-            node.getBlockCount();
+            node.getBlockCount().catch((err) => {
+                this.logger.info('node.getBlockCount error in performBenchmark(). Endpoint:', node.endpoint, 'Message:', err.message);
+            });
         }
     }
     checkMeshReady() {
