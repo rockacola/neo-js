@@ -1,6 +1,6 @@
 {
   "name": "neo-js",
-  "version": "0.10.0-alpha.1",
+  "version": "0.10.0-rc.1",
   "description": "A package for running a node on the neo blockchain.",
   "main": "dist/neo",
   "types": "dist/neo",
