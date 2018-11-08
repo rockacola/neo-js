@@ -11,6 +11,8 @@ import { EndpointValidator } from './validators/endpoint-validator'
 import profiles from './common/profiles'
 import C from './common/constants'
 
+const version = require('../package.json').version
+
 const MODULE_NAME = 'Neo'
 const DEFAULT_OPTIONS: NeoOptions = {
   network: C.network.testnet,
@@ -47,6 +49,7 @@ export class Neo extends EventEmitter {
 
     // Bootstrapping
     this.logger = new Logger(MODULE_NAME, this.options.loggerOptions)
+    this.logger.info('Version:', Neo.VERSION)
     this.mesh = this.getMesh()
     this.storage = this.getStorage()
     this.api = this.getApi()
@@ -56,15 +59,11 @@ export class Neo extends EventEmitter {
   }
 
   static get VERSION(): string {
-    return profiles.version
+    return version
   }
 
-  get VERSION(): string {
-    return profiles.version
-  }
-
-  get UserAgent(): string {
-    return `neo-js:${this.VERSION}`
+  static get UserAgent(): string {
+    return `NEO-JS:${Neo.VERSION}`
   }
 
   close() {
@@ -98,7 +97,7 @@ export class Neo extends EventEmitter {
     } else if (this.options.storageType === C.storage.memory) {
       return new MemoryStorage(this.options.storageOptions)
     } else if (this.options.storageType === C.storage.mongodb) {
-      const mongoStorageOptions = merge({}, this.options.storageOptions, { userAgent: this.UserAgent })
+      const mongoStorageOptions = merge({}, this.options.storageOptions, { userAgent: Neo.UserAgent })
       return new MongodbStorage(mongoStorageOptions)
     } else {
       throw new Error(`Unknown storageType [${this.options.storageType}]`)
