@@ -12,6 +12,7 @@ const mongodb_storage_1 = require("./storages/mongodb-storage");
 const endpoint_validator_1 = require("./validators/endpoint-validator");
 const profiles_1 = require("./common/profiles");
 const constants_1 = require("./common/constants");
+const version = require('../package.json').version;
 const MODULE_NAME = 'Neo';
 const DEFAULT_OPTIONS = {
     network: constants_1.default.network.testnet,
@@ -23,6 +24,7 @@ class Neo extends events_1.EventEmitter {
         this.options = lodash_1.merge({}, DEFAULT_OPTIONS, options);
         this.validateOptionalParameters();
         this.logger = new node_log_it_1.Logger(MODULE_NAME, this.options.loggerOptions);
+        this.logger.info('Version:', Neo.VERSION);
         this.mesh = this.getMesh();
         this.storage = this.getStorage();
         this.api = this.getApi();
@@ -30,13 +32,10 @@ class Neo extends events_1.EventEmitter {
         this.logger.debug('constructor completes.');
     }
     static get VERSION() {
-        return profiles_1.default.version;
+        return version;
     }
-    get VERSION() {
-        return profiles_1.default.version;
-    }
-    get UserAgent() {
-        return `neo-js:${this.VERSION}`;
+    static get UserAgent() {
+        return `NEO-JS:${Neo.VERSION}`;
     }
     close() {
         this.logger.debug('close triggered.');
@@ -66,7 +65,7 @@ class Neo extends events_1.EventEmitter {
             return new memory_storage_1.MemoryStorage(this.options.storageOptions);
         }
         else if (this.options.storageType === constants_1.default.storage.mongodb) {
-            const mongoStorageOptions = lodash_1.merge({}, this.options.storageOptions, { userAgent: this.UserAgent });
+            const mongoStorageOptions = lodash_1.merge({}, this.options.storageOptions, { userAgent: Neo.UserAgent });
             return new mongodb_storage_1.MongodbStorage(mongoStorageOptions);
         }
         else {

@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const profiles = {
-    version: '0.10.0',
     rpc: {
         mainnet: [
             { endpoint: 'https://seed1.cityofzion.io:443' },
