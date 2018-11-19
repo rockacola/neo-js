@@ -1,109 +1,298 @@
 <p align="center">
   <img 
     src="http://res.cloudinary.com/vidsy/image/upload/v1503160820/CoZ_Icon_DARKBLUE_200x178px_oq0gxm.png" 
-    width="125px">
+    width="125px"
+    alt="City of Zion logo">
 </p>
 
-<h1 align="center">neo-js</h1>
+<p align="center" style="font-size: 32px;">
+  <strong>neo-js</strong>
+</p>
 
 <p align="center">
-  A package for running a node on the <b>neo</b> blockchain.
+  Running NEO blockchain full node with Node.js and MongoDB.
+</p>
+
+<p align="center">
+  <a href="https://badge.fury.io/js/%40cityofzion%2Fneo-js">
+    <img src="https://badge.fury.io/js/%40cityofzion%2Fneo-js.svg" alt="npm version">
+  </a>
 </p>
 
 ## Overview
 
-The `neo-js` package is designed to interface with the **Neo** blockchain in a number of different ways that are configured by options that are used to initialize a node. A few examples of these different interaction mechanics are defined in the quickstart below as well as in the examples.
+`neo-js` package is designed to interface with the NEO blockchain in a number of different ways that are configured by options that are used to initialize a node. A few examples of these different interaction mechanics are defined in the quickstart below as well as in the examples.
 
-**note:** All blockchain events (Invocation and Deploy) use the RPC calls to interface with the blockchain unless they can be run locally (sometimes referred to as a 'test invoke')
+**This is not a SDK library for interacting with NEO blockchain. You are looking for [`neon-js`](https://github.com/cityofzion/neon-js).**
 
-## A note on local storage
+## Getting Started
 
-Currently this module only support MongoDB for synchronizing the blockchain.  Future storage types are planning including other NoSQL databases, SQL databases, and in-memory solutions.
+### Preparations
 
-This module uses 'lazy caching' to improve performance when using local storage. Blocks are initially downloaded and stored in three collections (blocks, transactions, and addresses) as a result of the sync process. Upon the first request for a specific transaction (as a result of any number of the methods), the transaction will be expanded as [described in Neon wallet architecture](https://github.com/CityOfZion/neon-wallet-db/blob/master/docs/Overview.md) and updated in the collection. The next time the block is requested, the expanded transaction will already be available in the collection.
+Currently this module only support MongoDB for synchronizing the blockchain. You are expect to be connected to an
+instance of MongoDB 3.2+ to use most of its features.
 
-This mechanic is also used for address balances. Upon requesting an update for an asset balance, the transaction collection is analyzed and the asset balance is stored in an account collection along with the max block height during the calculation. Upon future requests for the asset balance, the asset collection is first queried for previous balance.  The asset balance is then updated using only the new blocks since the previous calculation event.
-
-## System Recommendations
+### System Recommendations
 
 * NodeJS 8+
-* MongoDB 3.0+
+* MongoDB 3.2+
 
 ## Installation
 
 Install the package using:
 
 ```bash
-$ npm install --save neo-js-blockchain
+$ npm install --save @cityofzion/neo-js
 ```
 
 Alternatively, to access to the latest available code, you can reference to the git repository directly:
 
 ```bash
-$ npm install --save CityOfZion/neo-js#develop
+$ npm install --save git://github.com/CityOfZion/neo-js.git#develop
 ```
-
-**note:** `neo-js` requires that MongoDB server is installed to run the instance as a full node.
-Installation instructions can be found in [MongoDB installation manual](https://docs.mongodb.com/manual/installation/).
 
 ## Quick Start
 
+More comprehensive examples can be found at [`neo-js-examples`](https://github.com/rockacola/neo-js-examples) repository.
+
 ```js
-const Neo = require('neo-js-blockchain')
+const Neo = require('@cityofzion/neo-js').Neo
 ```
 
 To create a new blockchain instance:
 
 ```js
-// create the local node instance that will interface with the rpc methods
-const nodeT = new Neo({ network: 'testnet' }) //on testnet
-const nodeM = new Neo({ network: 'mainnet' }) //on mainnet
+// Create a neo instances to interface with RPC methods
+const testnetNeo = new Neo({ network: 'testnet' })
 
-nodeT.mesh.rpc('getBlock', 1000) //get block 1000 from testnet
-nodeM.mesh.rpc('getBlock', 1000) //get block 1000 from mainnet
+// Wait for mesh to be ready before attempt to fetch block information
+testnetNeo.mesh.on('ready', () => {
+  testnetNeo.api.getBlockCount()
+    .then((res) => {
+      console.log('Testnet getBlockCount:', res)
+    })
+})
+
+// To connect to the mainnet:
+const mainnetNeo = new Neo({ network: 'mainnet' })
+
+mainnetNeo.mesh.on('ready', () => {
+  mainnetNeo.api.getBlock(1000)
+    .then((res) => {
+      console.log('Mainnet getBlock(1000).hash:', res.hash)
+    })
+})
 ```
 
-This will create a new node instance and configure it to sync the blockchain to a 3 mongoDB collections that we define:
+This will create a new node instance and configure it to sync the blockchain to the defined mongoDB collections:
 
 ```js
 const options = {
   network: 'testnet',
-  storage: {
-    model: 'mongoDB',
-    collectionNames: {
-      blocks: 'b_neo_t_blocks',
-      transactions: 'b_neo_t_transactions',
-      addresses: 'b_neo_t_addresses'
-    }
-  }
+  storageType: 'mongodb',
+  storageOptions: {
+    connectionString: 'mongodb://localhost/neo_testnet',
+  },
 }
 
-// create the local node instance and get the local block count after 5 seconds.
-const node = new Neo(options)
+// Create a neo instance
+const neo = new Neo(options)
 
-setTimeout(() => {
-  node.storage.getBlockCount()
-    .then( (res) => console.log(res) )
-}, 5000)
+// Get block count
+neo.storage.on('ready', () => {
+  neo.storage.getBlockCount()
+    .then((res) => {
+      console.log('Block count:', res)
+    })
+})
 ```
 
 ## Documentation
 
-Documentation (incomplete) for the project can be found at:
+Documentation for the project can be found at:
 
-* http://cityofzion.io/neo-js/
+* [http://cityofzion.io/neo-js/](http://cityofzion.io/neo-js/)
 
-Self-documented code examples are available as part of the project source code:
+You can find more code examples at repository:
 
-* https://github.com/CityOfZion/neo-js/blob/master/examples
+* [https://github.com/rockacola/neo-js-examples](https://github.com/rockacola/neo-js-examples)
+
+## Blockchain Bootstrap Files
+
+[_Please refer to Bootstrap Files document_](https://github.com/CityOfZion/neo-js/blob/master/BOOTSTRAP_FILES.md)
+
+## Options
+
+Possible options and default values.
+
+### `neo`
+
+```js
+const neoOptions = {
+  network: 'testnet',
+  storageType: undefined,
+  endpoints: undefined,
+  nodeOptions: undefined,
+  meshOptions: undefined,
+  storageOptions: undefined,
+  apiOptions: undefined,
+  syncerOptions: undefined,
+  loggerOptions: {},
+}
+```
+
+### `core/api`
+
+```js
+const apiOptions = {
+  loggerOptions: {},
+}
+```
+
+### `core/mesh`
+
+```js
+const meshOptions = {
+  startBenchmarkOnInit: true,
+  toFetchUserAgent: true,
+  benchmarkIntervalMs: 2000,
+  fetchMissingUserAgentIntervalMs: 5000,
+  refreshUserAgentIntervalMs: 5 * 60 * 1000,
+  minActiveNodesRequired: 2,
+  pendingRequestsThreshold: 5,
+  loggerOptions: {},
+}
+```
+
+### `core/syncer`
+
+```js
+const syncerOptions = {
+  minHeight: 1,
+  maxHeight: undefined,
+  blockRedundancy: 1,
+  checkRedundancyBeforeStoreBlock: true,
+  startOnInit: true,
+  toSyncIncremental: true,
+  toSyncForMissingBlocks: true,
+  toPruneRedundantBlocks: true,
+  storeQueueConcurrency: 30,
+  pruneQueueConcurrency: 10,
+  enqueueBlockIntervalMs: 5000,
+  verifyBlocksIntervalMs: 1 * 60 * 1000,
+  maxStoreQueueLength: 1000,
+  retryEnqueueDelayMs: 5000,
+  standardEnqueueBlockPriority: 5,
+  retryEnqueueBlockPriority: 3,
+  missingEnqueueStoreBlockPriority: 1,
+  enqueuePruneBlockPriority: 5,
+  maxPruneChunkSize: 1000,
+  loggerOptions: {},
+}
+```
+
+### `core/node`
+
+```js
+const nodeOptions = {
+  toLogReliability: false,
+  truncateRequestLogIntervalMs: 30 * 1000,
+  requestLogTtl: 5 * 60 * 1000,
+  timeout: 30000,
+  loggerOptions: {},
+}
+```
+
+### `storages/memory-storage`
+
+```js
+const memoryStorageOptions = {
+  loggerOptions: {},
+}
+```
+
+### `storages/mongodb-storage`
+
+```js
+const mongodbStorageOptions = {
+  connectOnInit: true,
+  reviewIndexesOnConnect: false,
+  userAgent: 'Unknown',
+  collectionNames: {
+    blocks: 'blocks',
+    transactions: 'transactions',
+    assets: 'assets',
+  },
+  loggerOptions: {},
+}
+```
+
+### `Logger`
+
+```js
+const loggerOptions = {
+  level: 'warn', // silent | error | warn | info | debug | trace
+  displayTimestamp: true,
+  displayName: true,
+  displayLevel: true,
+  useLevelInitial: false,
+  useLocalTime: false,
+  timestampFormat: 'YYYY-MM-DD HH:mm:ss.SSS'
+}
+```
+
+## Events
+
+Possible events emitters per class.
+
+### `neo`
+
+* N/A
+
+### `core/api`
+
+* `storage:insert`
+
+### `core/mesh`
+
+* `ready`
+
+### `core/syncer`
+
+* `start`
+* `stop`
+* `query:worker:complete`
+* `blockVerification:init`
+* `blockVerification:complete`
+* `blockVerification:missingBlocks`
+* `blockVerification:excessiveBlocks`
+* `storeBlock:init`
+* `storeBlock:complete`
+* `upToDate`
+
+### `core/node`
+
+* `query:init`
+* `query:success`
+* `query:failed`
+
+### `storages/memory-storage`
+
+* `ready`
+
+### `storages/mongodb-storage`
+
+* `ready`
 
 ## Contribution
 
-`neo-js` always encourages community code contribution. Before contributing please read the [contributor guidelines](.github/CONTRIBUTING.md) and search the issue tracker as your issue may have already been discussed or fixed. To contribute, fork `neo-js`, commit your changes and submit a pull request.
+`neo-js` always encourages community code contribution. Before contributing please read the [contributor guidelines](https://github.com/CityOfZion/neo-js/blob/master/.github/CONTRIBUTING.md) and search the issue tracker as your issue may have already been discussed or fixed. To contribute, fork `neo-js`, commit your changes and submit a pull request.
 
 By contributing to `neo-js`, you agree that your contributions will be licensed under its MIT license.
 
 ## License
 
-* Open-source [MIT](LICENSE.md).
-* Main author is [@lllwvlvwlll](https://github.com/lllwvlvwlll).
+* Open-source [MIT](https://github.com/CityOfZion/neo-js/blob/master/LICENSE.md).
+* Authors:
+  * [@lllwvlvwlll](https://github.com/lllwvlvwlll)
+  * [@rockacola](https://github.com/rockacola)
