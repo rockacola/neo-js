@@ -10,10 +10,14 @@ import { NeoValidator } from '../validators/neo-validator'
 
 const MODULE_NAME = 'Api'
 const DEFAULT_OPTIONS: ApiOptions = {
+  insertToStorage: true,
+  checkReadyIntervalMs: 200,
   loggerOptions: {},
 }
 
 export interface ApiOptions {
+  insertToStorage?: boolean
+  checkReadyIntervalMs?: number
   loggerOptions?: LoggerOptions
 }
 
@@ -42,6 +46,7 @@ export class Api extends EventEmitter {
 
     // Bootstrapping
     this.logger = new Logger(MODULE_NAME, this.options.loggerOptions)
+    this.checkMeshAndStorageReady()
 
     // Event handlers
     this.on('storage:insert', this.storageInsertHandler.bind(this))
@@ -58,17 +63,17 @@ export class Api extends EventEmitter {
 
     return new Promise((resolve, reject) => {
       this.storage!.getBlockCount()
-        .then((blockHeight) => resolve(blockHeight))
-        .catch((err) => {
+        .then((blockHeight: number) => resolve(blockHeight))
+        .catch((err: any) => {
           // Failed to fetch from storage, try mesh instead
           this.logger.debug('Cannot find result from storage delegate, attempt to fetch from mesh instead...')
           this.getBlockCountFromMesh()
-            .then((res) => {
+            .then((res: number) => {
               this.logger.debug('Successfully fetch result from mesh.')
               this.emit('storage:insert', { method: C.rpc.getblockcount, result: res })
               resolve(res)
             })
-            .catch((err2) => reject(err2))
+            .catch((err2: any) => reject(err2))
         })
     })
   }
@@ -102,19 +107,64 @@ export class Api extends EventEmitter {
     })
   }
 
+  getTransaction(transactionId: string): Promise<object> {
+    this.logger.debug('getBlock triggered. transactionId:', transactionId)
+
+    NeoValidator.validateTransactionId(transactionId)
+
+    if (!this.storage) {
+      this.logger.debug('No storage delegate detected.')
+      return this.getTransactionFromMesh(transactionId)
+    }
+
+    return new Promise((resolve, reject) => {
+      this.storage!.getTransaction(transactionId)
+        .then((block: object) => resolve(block))
+        .catch((err: any) => {
+          // Failed to fetch from storage, try mesh instead
+          this.logger.debug('Cannot find result from storage delegate. Error:', err.message)
+          this.logger.debug('Attempt to fetch from mesh instead...')
+          return this.getTransactionFromMesh(transactionId)
+        })
+    })
+  }
+
   private storageInsertHandler(payload: StorageInsertPayload) {
+    if (!this.options.insertToStorage) {
+      return
+    }
+
     this.logger.debug('storageInsertHandler triggered.')
     if (payload.method === C.rpc.getblockcount) {
       this.storeBlockCount(payload)
     } else if (payload.method === C.rpc.getblock) {
       this.storeBlock(payload)
     } else {
+      // TODO
       throw new Error('Not implemented.')
     }
   }
 
   private validateOptionalParameters() {
     // TODO
+  }
+
+  private checkMeshAndStorageReady() {
+    this.logger.debug('checkMeshAndStorageReady triggered.')
+
+    /**
+     * The easiest implementation to asynchronously detects readiness
+     * of multiple components, is to just periodically ping them until
+     * all are stated to be ready.
+     */
+    const checkIntervalId = setInterval(() => {
+      const meshReady = this.mesh.isReady()
+      const storageReady = this.storage ? this.storage.isReady() : true
+      if (meshReady && storageReady) {
+        this.emit('ready')
+        clearInterval(checkIntervalId)
+      }
+    }, this.options.checkReadyIntervalMs!)
   }
 
   private storeBlockCount(payload: StorageInsertPayload) {
@@ -169,6 +219,18 @@ export class Api extends EventEmitter {
           })
           .catch((err: any) => reject(err))
       })
+    } else {
+      // TODO
+      return Promise.reject(new Error('Edge case not implemented.'))
+    }
+  }
+
+  private getTransactionFromMesh(transactionId: string): Promise<object> {
+    this.logger.debug('getTransactionFromMesh triggered.')
+
+    const highestNode = this.mesh.getHighestNode()
+    if (highestNode && highestNode.blockHeight) {
+      return highestNode.getTransaction(transactionId)
     } else {
       // TODO
       return Promise.reject(new Error('Edge case not implemented.'))

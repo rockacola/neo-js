@@ -68,9 +68,7 @@ export class Node extends EventEmitter {
 
     // Event handlers
     this.on('query:init', this.queryInitHandler.bind(this))
-    this.on('query:success', this.querySuccessHandler.bind(this))
-    this.on('query:failed', this.queryFailedHandler.bind(this))
-
+    this.on('query:complete', this.queryCompleteHandler.bind(this))
     this.logger.debug('constructor completes.')
   }
 
@@ -91,6 +89,12 @@ export class Node extends EventEmitter {
   getVersion(): Promise<object> {
     this.logger.debug('getVersion triggered.')
     return this.query(C.rpc.getversion)
+  }
+
+  getTransaction(transactionId: string, isVerbose: boolean = true): Promise<object> {
+    this.logger.debug('transactionId triggered.')
+    const verboseKey: number = isVerbose ? 1 : 0
+    return this.query(C.rpc.getrawtransaction, [transactionId, verboseKey])
   }
 
   getNodeMeta(): NodeMeta {
@@ -121,10 +125,14 @@ export class Node extends EventEmitter {
   getShapedLatency(): number | undefined {
     this.logger.debug('getShapedLatency triggered.')
     if (this.requestLogs.length === 0) {
-      return this.latency
+      return undefined
     }
 
-    const logPool = filter(this.requestLogs, (logObj: any) => logObj.isSuccess === true)
+    const logPool = filter(this.requestLogs, (logObj: any) => logObj.isSuccess === true && logObj.latency !== undefined)
+    if (logPool.length === 0) {
+      return undefined
+    }
+
     const averageLatency = round(meanBy(logPool, (logObj: any) => logObj.latency), 0)
     return averageLatency
   }
@@ -141,13 +149,8 @@ export class Node extends EventEmitter {
     this.startBenchmark(payload)
   }
 
-  private querySuccessHandler(payload: any) {
-    this.logger.debug('querySuccessHandler triggered.')
-    this.stopBenchmark(payload)
-  }
-
-  private queryFailedHandler(payload: object) {
-    this.logger.debug('queryFailedHandler triggered.')
+  private queryCompleteHandler(payload: any) {
+    this.logger.debug('queryCompleteHandler triggered.')
     this.stopBenchmark(payload)
   }
 
@@ -175,7 +178,7 @@ export class Node extends EventEmitter {
     this.lastPingTimestamp = Date.now()
 
     // Store latest active state base on existence of error
-    if (payload.error) {
+    if (!payload.isSuccess) {
       this.isActive = false
     } else {
       this.isActive = true
@@ -206,15 +209,15 @@ export class Node extends EventEmitter {
 
         // Reliability logging
         if (this.options.toLogReliability) {
-          if (payload.error) {
+          if (!payload.isSuccess) {
             this.requestLogs.push({
               timestamp: Date.now(),
-              isSuccess: false,
+              isSuccess: payload.isSuccess,
             })
           } else {
             this.requestLogs.push({
               timestamp: Date.now(),
-              isSuccess: true,
+              isSuccess: payload.isSuccess,
               latency: this.latency,
             })
           }
@@ -241,11 +244,11 @@ export class Node extends EventEmitter {
           const result = res.result
           const blockHeight = method === C.rpc.getblockcount ? result : undefined
           const userAgent = method === C.rpc.getversion ? result.useragent : undefined
-          this.emit('query:success', { method, latency, blockHeight, userAgent })
+          this.emit('query:complete', { isSuccess: true, method, latency, blockHeight, userAgent })
           return resolve(result)
         })
         .catch((err: any) => {
-          this.emit('query:failed', { method, error: err })
+          this.emit('query:complete', { isSuccess: false, method, error: err })
           return reject(err)
         })
     })
