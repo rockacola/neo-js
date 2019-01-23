@@ -49,6 +49,7 @@ export declare class MongodbStorage extends EventEmitter {
     private reviewIndexes;
     private reviewBlockIndexForHeight;
     private reviewBlockIndexForTransactionId;
+    private reviewBlockIndexForTime;
     private reviewBlockMetaIndexForHeight;
     private reviewBlockMetaIndexForTime;
     private reviewTransactionMetaIndexForHeight;

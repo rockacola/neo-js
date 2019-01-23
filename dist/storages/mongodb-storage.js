@@ -239,6 +239,7 @@ class MongodbStorage extends events_1.EventEmitter {
             try {
                 yield this.reviewBlockIndexForHeight();
                 yield this.reviewBlockIndexForTransactionId();
+                yield this.reviewBlockIndexForTime();
                 yield this.reviewBlockMetaIndexForHeight();
                 yield this.reviewBlockMetaIndexForTime();
                 yield this.reviewTransactionMetaIndexForHeight();
@@ -267,6 +268,14 @@ class MongodbStorage extends events_1.EventEmitter {
             this.logger.debug('reviewBlockIndexForTransactionId triggered.');
             const key = 'payload.tx.txid_1';
             const keyObj = { 'payload.tx.txid': 1 };
+            return yield this.blockDao.reviewIndex(key, keyObj);
+        });
+    }
+    reviewBlockIndexForTime() {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.logger.debug('reviewBlockIndexForTime triggered.');
+            const key = 'payload.time_1';
+            const keyObj = { 'payload.time': 1 };
             return yield this.blockDao.reviewIndex(key, keyObj);
         });
     }
