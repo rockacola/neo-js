@@ -268,6 +268,7 @@ export class MongodbStorage extends EventEmitter {
     try {
       await this.reviewBlockIndexForHeight()
       await this.reviewBlockIndexForTransactionId()
+      await this.reviewBlockIndexForTime()
       await this.reviewBlockMetaIndexForHeight()
       await this.reviewBlockMetaIndexForTime()
       await this.reviewTransactionMetaIndexForHeight()
@@ -293,6 +294,13 @@ export class MongodbStorage extends EventEmitter {
     this.logger.debug('reviewBlockIndexForTransactionId triggered.')
     const key = 'payload.tx.txid_1'
     const keyObj = { 'payload.tx.txid': 1 }
+    return await this.blockDao.reviewIndex(key, keyObj)
+  }
+
+  private async reviewBlockIndexForTime(): Promise<void> {
+    this.logger.debug('reviewBlockIndexForTime triggered.')
+    const key = 'payload.time_1'
+    const keyObj = { 'payload.time': 1 }
     return await this.blockDao.reviewIndex(key, keyObj)
   }
 
